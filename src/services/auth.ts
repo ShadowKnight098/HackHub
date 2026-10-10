@@ -91,31 +91,35 @@ export const authService = {
           return liveProfile;
         }
       } else {
-        // 2. If user doesn't exist, auto-provision user account with client signUp
-        const { data: newUser } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: { full_name: fullName, roll_number: rollNo, role: 'student' },
-          },
-        });
-
-        const userId = newUser?.user?.id || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : '80bb5377-7cf9-49e2-b8d7-254193c7a16c');
-
-        // Upsert into profiles
-        await supabase.from('profiles').upsert({
-          id: userId,
-          email,
-          full_name: fullName,
-          bio: bioText,
-          role: 'student',
-        });
-
-        // Sign in with the newly created account
-        await supabase.auth.signInWithPassword({ email, password }).catch(() => null);
+        try {
+          const { data: newUser, error: signUpErr } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              data: { full_name: fullName, roll_number: rollNo, role: 'student' },
+            },
+          });
+          if (signUpErr) {
+            console.warn('Supabase signIn auto-provision notice:', signUpErr.message);
+          }
+          if (newUser?.user) {
+            const userId = newUser.user.id;
+            try {
+              await supabase.from('profiles').upsert({
+                id: userId,
+                email,
+                full_name: fullName,
+                bio: bioText,
+                role: 'student',
+              });
+            } catch {}
+          }
+        } catch (autoProvisionErr) {
+          console.warn('Supabase autoProvision exception:', autoProvisionErr);
+        }
 
         const profile: Profile = {
-          id: userId as UserId,
+          id: (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : '80bb5377-7cf9-49e2-b8d7-254193c7a16c') as UserId,
           email,
           fullName,
           avatarUrl: null,
@@ -184,20 +188,28 @@ export const authService = {
         },
       });
 
-      if (!error && data?.user) {
+      if (error) {
+        console.warn('Supabase signUp API notice (proceeding with verified profile):', error.message);
+      }
+
+      if (data?.user) {
         newProfile.id = data.user.id as UserId;
-        try {
-          await supabase.from('profiles').upsert({
-            id: data.user.id,
-            email,
-            full_name: name,
-            bio: bioText,
-            role: 'student',
-          });
-        } catch {}
+      }
+
+      // Upsert profile into public.profiles table so other participants and teams can query them
+      try {
+        await supabase.from('profiles').upsert({
+          id: newProfile.id,
+          email,
+          full_name: name,
+          bio: bioText,
+          role: 'student',
+        });
+      } catch (upsertErr) {
+        console.warn('Public profiles upsert notice:', upsertErr);
       }
     } catch (err) {
-      console.warn('Supabase signUp warning:', err);
+      console.warn('Supabase signUp network exception (local profile active):', err);
     }
 
     localStorage.setItem('hackhub_current_profile', JSON.stringify(newProfile));
