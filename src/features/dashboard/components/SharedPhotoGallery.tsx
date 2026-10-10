@@ -24,6 +24,7 @@ import {
 import { db, SharedPhoto } from '@/lib/db';
 import { useAuth } from '@/features/auth';
 import { useTeams } from '@/features/teams';
+import { storageService } from '@/services/storage';
 
 const DEFAULT_SAMPLE_PHOTOS: SharedPhoto[] = [
   {
@@ -310,30 +311,42 @@ export const SharedPhotoGallery: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  const handleCreatePhoto = () => {
-    if (!newUrl.trim()) return;
+  const [isUploading, setIsUploading] = useState(false);
 
-    const created: SharedPhoto = {
-      id: `photo-${Date.now()}`,
-      url: newUrl,
-      title: newTitle.trim() || `${autoTeam} Prototype`,
-      caption: '',
-      teamName: autoTeam,
-      tableNumber: autoLocation,
-      uploadedBy: {
-        name: profile?.fullName || 'Participant',
-        avatarUrl: profile?.avatarUrl || undefined,
-      },
-      tags: ['Live'],
-      likes: 1,
-      likedByMe: true,
-      createdAt: new Date().toISOString(),
-    };
+  const handleCreatePhoto = async () => {
+    if (!newUrl.trim() || isUploading) return;
 
-    db.photos.insert(created);
-    setPhotos((prev) => [created, ...prev]);
-    setActiveIndex(0);
-    closeModal();
+    setIsUploading(true);
+    try {
+      // 1. Upload photo to Supabase Storage Bucket ('gallery')
+      const publicBucketUrl = await storageService.uploadImage(newUrl, 'gallery', 'photos');
+
+      const created: SharedPhoto = {
+        id: `photo-${Date.now()}`,
+        url: publicBucketUrl,
+        title: newTitle.trim() || `${autoTeam} Prototype`,
+        caption: '',
+        teamName: autoTeam,
+        tableNumber: autoLocation,
+        uploadedBy: {
+          name: profile?.fullName || 'Participant',
+          avatarUrl: profile?.avatarUrl || undefined,
+        },
+        tags: ['Live'],
+        likes: 1,
+        likedByMe: true,
+        createdAt: new Date().toISOString(),
+      };
+
+      db.photos.insert(created);
+      setPhotos((prev) => [created, ...prev]);
+      setActiveIndex(0);
+      closeModal();
+    } catch (uploadErr) {
+      console.warn('Failed to upload photo to storage bucket:', uploadErr);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   // Carousel navigation handlers
@@ -892,10 +905,10 @@ export const SharedPhotoGallery: React.FC = () => {
               <button
                 type="button"
                 onClick={handleCreatePhoto}
-                disabled={!newUrl.trim()}
+                disabled={!newUrl.trim() || isUploading}
                 className="px-6 py-2 rounded-xl text-xs font-semibold bg-[var(--accent)] hover:opacity-90 text-[var(--bg)] transition-all shadow-sm cursor-pointer disabled:opacity-50"
               >
-                Post Snapshot
+                {isUploading ? 'Uploading to Bucket...' : 'Post Snapshot'}
               </button>
             </div>
           </ModalBody>
