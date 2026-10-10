@@ -1,0 +1,399 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {                       /* Light: Ivory */
+    --bg: #f4f1ea;              /* page background (ivory) */
+    --surface: #fdfcf9;         /* cards, panels, inputs */
+    --ink: #1f2430;             /* primary text (navy-charcoal) */
+    --muted: #6a6e7a;           /* secondary text */
+    --line: #ddd7ca;            /* borders, dividers */
+    --accent: #7b2d3b;          /* burgundy: buttons, selected states, links */
+    --moss: #a8832f;            /* antique gold: secondary highlight */
+    --sun: #c9a45c;             /* champagne: fine details, underlines */
+    --sky: #2f4a6d;             /* navy: tertiary highlight */
+    --n1: #f2e8cb;              /* note tint: champagne */
+    --n2: #dfe4ec;              /* note tint: pale slate */
+    --n3: #ecd9d9;              /* note tint: blush */
+
+    color-scheme: light;
+  }
+
+  :root[data-theme="dark"] {    /* Dark: Charcoal */
+    --bg: #14161c;
+    --surface: #1c1f27;
+    --ink: #efeae0;
+    --muted: #9a9ba5;
+    --line: #2e323d;
+    --accent: #d98a9a;          /* dusty rose */
+    --moss: #d4b06a;
+    --sun: #e3c27d;
+    --sky: #8fa8cf;
+    --n1: #3d3623;
+    --n2: #262c3a;
+    --n3: #3b2a2f;
+
+    color-scheme: dark;
+  }
+
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    border-color: var(--line);
+  }
+
+  html {
+    background-color: var(--bg);
+    color: var(--ink);
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--ink);
+    font-family: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    overflow-x: hidden;
+  }
+
+  /* Headings: Fraunces 700 with tight line-height */
+  h1, h2, h3, h4, .font-heading {
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.015em;
+  }
+
+  /* Numbers / display */
+  .font-fraunces {
+    font-family: 'Fraunces', serif;
+  }
+
+  /* Body & UI font */
+  .font-body {
+    font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  }
+
+  /* Accent labels: Cormorant Garamond italic */
+  .font-accent, .italic-label {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-style: italic;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+
+  /* Custom subtle scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--line) 90%, var(--muted));
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--muted);
+  }
+}
+
+@layer utilities {
+  /* Faint dot grid specified in prompt */
+  .bg-ivory-grid {
+    background-color: var(--bg);
+    background-image: radial-gradient(color-mix(in srgb, var(--ink) 9%, transparent) 1px, transparent 1.3px);
+    background-size: 22px 22px;
+  }
+
+  /* Card and Panel specs: surface, 1px line border, 10px radius, soft shadow */
+  .commons-card {
+    background-color: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: 0 12px 32px -22px rgba(20, 24, 40, 0.5);
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .commons-card:hover {
+    border-color: color-mix(in srgb, var(--sun) 65%, var(--line));
+  }
+
+  /* 2px, 48px-wide --sun rule under page titles */
+  .title-rule {
+    width: 48px;
+    height: 2px;
+    background-color: var(--sun);
+    margin-top: 10px;
+    margin-bottom: 18px;
+    border-radius: 2px;
+  }
+
+  /* 30px circle logo filled with linear-gradient(135deg, var(--sun), var(--moss)) */
+  .commons-logo-mark {
+    width: 30px;
+    height: 30px;
+    border-radius: 9999px;
+    background: linear-gradient(135deg, var(--sun), var(--moss));
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--surface);
+    box-shadow: 0 2px 8px -2px rgba(20, 24, 40, 0.25);
+    flex-shrink: 0;
+  }
+
+  /* Primary button: --accent bg, --bg text, 8px radius, letter-spacing .02em */
+  .commons-btn-primary {
+    background-color: var(--accent);
+    color: var(--bg);
+    border-radius: 8px;
+    letter-spacing: 0.02em;
+    font-family: 'Hanken Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 8px 18px;
+    transition: filter 0.2s ease, opacity 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .commons-btn-primary:hover {
+    filter: brightness(1.08);
+  }
+
+  /* Secondary button */
+  .commons-btn-secondary {
+    background-color: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font-family: 'Hanken Grotesk', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    padding: 8px 16px;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .commons-btn-secondary:hover {
+    border-color: var(--accent);
+    background-color: color-mix(in srgb, var(--surface) 92%, var(--line));
+  }
+
+  /* Active nav item: --surface background with a 2px inset --sun bar on left */
+  .commons-nav-active {
+    background-color: var(--surface);
+    color: var(--ink) !important;
+    font-weight: 600;
+    position: relative;
+    border: 1px solid var(--line);
+  }
+  .commons-nav-active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 4px;
+    bottom: 4px;
+    width: 2px;
+    background-color: var(--sun);
+    border-radius: 2px;
+  }
+
+  /* Selected chip / active filter: --accent background, --bg text */
+  .commons-chip-active {
+    background-color: var(--accent) !important;
+    color: var(--bg) !important;
+    border-color: var(--accent) !important;
+  }
+
+  /* Sticky notes: straight (no rotation), 6px radius, 3px --sun top border, soft shadow, tinted */
+  .commons-sticky-note {
+    border-radius: 6px;
+    border-top: 3px solid var(--sun);
+    box-shadow: 0 10px 24px -18px rgba(20, 24, 40, 0.4);
+    border-left: 1px solid var(--line);
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .commons-sticky-note:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 28px -16px rgba(20, 24, 40, 0.45);
+  }
+  .note-tint-1 { background-color: var(--n1); }
+  .note-tint-2 { background-color: var(--n2); }
+  .note-tint-3 { background-color: var(--n3); }
+
+  /* Focus ring: 2px solid --accent, 1px offset */
+  .commons-focus:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  /* Visibility colors according to spec: private=--accent, team=--sky, hackathon=--moss, public=--muted */
+  .badge-visibility-private {
+    background-color: color-mix(in srgb, var(--accent) 14%, var(--surface));
+    color: var(--accent);
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  }
+  .badge-visibility-team {
+    background-color: color-mix(in srgb, var(--sky) 14%, var(--surface));
+    color: var(--sky);
+    border: 1px solid color-mix(in srgb, var(--sky) 30%, transparent);
+  }
+  .badge-visibility-hackathon {
+    background-color: color-mix(in srgb, var(--moss) 14%, var(--surface));
+    color: var(--moss);
+    border: 1px solid color-mix(in srgb, var(--moss) 30%, transparent);
+  }
+  .badge-visibility-public {
+    background-color: color-mix(in srgb, var(--muted) 14%, var(--surface));
+    color: var(--muted);
+    border: 1px solid color-mix(in srgb, var(--muted) 30%, transparent);
+  }
+
+  /* Universal crisp input styles */
+  .commons-input {
+    width: 100%;
+    height: 40px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background-color: var(--surface);
+    color: var(--ink);
+    font-family: 'Hanken Grotesk', system-ui, sans-serif;
+    font-size: 14px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    outline: none;
+  }
+  .commons-input:hover {
+    border-color: color-mix(in srgb, var(--accent) 50%, var(--line));
+  }
+  .commons-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent);
+  }
+}
+
+/* Ensure inputs and HeroUI slots never collapse or misalign */
+[data-slot="base"] {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  position: relative !important;
+}
+
+[data-slot="label"] {
+  display: block !important;
+  position: static !important;
+  transform: none !important;
+  margin-bottom: 6px !important;
+  font-family: 'Hanken Grotesk', system-ui, sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: var(--ink) !important;
+  pointer-events: auto !important;
+}
+
+[data-slot="main-wrapper"] {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+}
+
+[data-slot="input-wrapper"], [data-slot="trigger"] {
+  background-color: var(--surface) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 8px !important;
+  min-height: 42px !important;
+  box-shadow: none !important;
+  display: flex !important;
+  align-items: center !important;
+  position: relative !important;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+[data-slot="input-wrapper"]:hover, [data-slot="trigger"]:hover {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--line)) !important;
+}
+
+[data-slot="input-wrapper"][data-focus="true"],
+[data-slot="input-wrapper"]:focus-within,
+[data-slot="trigger"][data-focus="true"],
+[data-slot="trigger"]:focus-visible {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent) !important;
+}
+
+[data-slot="inner-wrapper"] {
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  gap: 8px !important;
+}
+
+[data-slot="input"] {
+  display: block !important;
+  width: 100% !important;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  color: var(--ink) !important;
+  font-family: 'Hanken Grotesk', system-ui, sans-serif !important;
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+[data-slot="input"]::placeholder {
+  color: var(--muted) !important;
+  opacity: 0.8 !important;
+}
+
+[data-slot="value"] {
+  color: var(--ink) !important;
+  font-family: 'Hanken Grotesk', system-ui, sans-serif !important;
+  font-size: 14px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Strictly hide native hidden selects used by accessibility / HeroUI internals */
+select[aria-hidden="true"],
+[data-slot="hidden-select"],
+.sr-only,
+[data-hidden="true"] {
+  display: none !important;
+  visibility: hidden !important;
+  position: absolute !important;
+  width: 0 !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border-width: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Anti-collapse utility to prevent text collapsing */
+.no-collapse {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
