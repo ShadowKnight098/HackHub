@@ -50,6 +50,17 @@ export const SharedPhotoGallery: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
+  // Responsive state for mobile vs desktop perspective sizing
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 640);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Automatically detect user's team & location
   const myTeam = profile
     ? teams.find((t) => t.members.some((m) => m.userId === profile.id))
@@ -370,8 +381,8 @@ export const SharedPhotoGallery: React.FC = () => {
           </div>
         ) : (
           <>
-            {/* Perspective Stage Container */}
-            <div className="relative w-full h-[360px] sm:h-[420px] md:h-[460px] flex items-center justify-center">
+            {/* Perspective Stage Container with touch swipe support */}
+            <div className="relative w-full h-[370px] sm:h-[420px] md:h-[460px] flex items-center justify-center touch-pan-y">
           {photos.map((photo, index) => {
             // Calculate circular offset relative to active card
             let offset = index - activeIndex;
@@ -384,7 +395,10 @@ export const SharedPhotoGallery: React.FC = () => {
 
             if (!isNear) return null;
 
-            // Compute 3D perspective translations
+            // Compute responsive perspective translations (tight on mobile, spacious on desktop)
+            const step1 = isMobile ? 135 : 190;
+            const step2 = isMobile ? 230 : 320;
+
             let xPos = 0;
             let scale = 1;
             let zIndex = 20;
@@ -393,39 +407,49 @@ export const SharedPhotoGallery: React.FC = () => {
 
             if (offset === 0) {
               xPos = 0;
-              scale = 1.05;
+              scale = isMobile ? 1.02 : 1.05;
               zIndex = 30;
               opacity = 1;
               brightness = 1;
             } else if (offset === -1) {
-              xPos = -190;
+              xPos = -step1;
               scale = 0.88;
               zIndex = 20;
-              opacity = 0.88;
+              opacity = 0.85;
               brightness = 0.85;
             } else if (offset === 1) {
-              xPos = 190;
+              xPos = step1;
               scale = 0.88;
               zIndex = 20;
-              opacity = 0.88;
+              opacity = 0.85;
               brightness = 0.85;
             } else if (offset === -2) {
-              xPos = -320;
+              xPos = -step2;
               scale = 0.74;
               zIndex = 10;
-              opacity = 0.45;
+              opacity = 0.4;
               brightness = 0.7;
             } else if (offset === 2) {
-              xPos = 320;
+              xPos = step2;
               scale = 0.74;
               zIndex = 10;
-              opacity = 0.45;
+              opacity = 0.4;
               brightness = 0.7;
             }
 
             return (
               <motion.div
                 key={photo.id}
+                drag={isCenter ? 'x' : false}
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.2}
+                onDragEnd={(_e, info) => {
+                  if (info.offset.x < -40 || info.velocity.x < -300) {
+                    handleNext();
+                  } else if (info.offset.x > 40 || info.velocity.x > 300) {
+                    handlePrev();
+                  }
+                }}
                 animate={{
                   x: xPos,
                   scale,
@@ -435,8 +459,8 @@ export const SharedPhotoGallery: React.FC = () => {
                 }}
                 transition={{
                   type: 'spring',
-                  stiffness: 260,
-                  damping: 26,
+                  stiffness: 280,
+                  damping: 28,
                 }}
                 onClick={() => {
                   if (isCenter) {
@@ -445,8 +469,8 @@ export const SharedPhotoGallery: React.FC = () => {
                     setActiveIndex(index);
                   }
                 }}
-                className={`absolute w-[240px] sm:w-[280px] md:w-[320px] aspect-[3/4] rounded-[28px] overflow-hidden cursor-pointer group shadow-2xl transition-shadow ${
-                  isCenter ? 'ring-2 ring-[var(--accent)]/30' : ''
+                className={`absolute w-[215px] sm:w-[280px] md:w-[320px] aspect-[3/4] rounded-[24px] sm:rounded-[28px] overflow-hidden cursor-grab active:cursor-grabbing group shadow-2xl transition-shadow select-none ${
+                  isCenter ? 'ring-2 ring-[var(--accent)]/40 shadow-[0_16px_40px_rgba(0,0,0,0.35)]' : ''
                 }`}
                 style={{
                   transformOrigin: 'center center',
@@ -473,7 +497,7 @@ export const SharedPhotoGallery: React.FC = () => {
                 </div>
 
                 {/* ── FROSTED GLASS BLUR OVERLAY ON BOTTOM (MATCHING REQUEST) ── */}
-                <div className="absolute bottom-0 inset-x-0 p-3.5 sm:p-4.5 backdrop-blur-xl bg-black/50 dark:bg-black/70 border-t border-white/20 text-white rounded-b-[28px] flex flex-col gap-2">
+                <div className="absolute bottom-0 inset-x-0 p-3 sm:p-4.5 backdrop-blur-xl bg-black/60 dark:bg-black/75 border-t border-white/20 text-white rounded-b-[24px] sm:rounded-b-[28px] flex flex-col gap-1.5 sm:gap-2">
                   {/* Top Row: Team Name & Location Badge */}
                   <div className="flex items-center justify-between gap-2">
                     <div className="min-w-0 flex items-center gap-2">
@@ -494,7 +518,7 @@ export const SharedPhotoGallery: React.FC = () => {
 
                   {/* Bottom Row: Tagline / Caption & Likes */}
                   <div className="flex items-center justify-between gap-2 pt-1 border-t border-white/10 text-xs">
-                    <p className="text-white/85 text-[11px] sm:text-xs truncate max-w-[170px] sm:max-w-[200px]">
+                    <p className="text-white/85 text-[10px] sm:text-xs truncate max-w-[130px] sm:max-w-[200px]">
                       {photo.title || `Snapshot by ${photo.uploadedBy.name}`}
                     </p>
 
@@ -533,15 +557,15 @@ export const SharedPhotoGallery: React.FC = () => {
         {/* ── CAROUSEL BOTTOM CONTROLS (CIRCULAR ARROWS MATCHING IMAGE) ── */}
         <div className="w-full flex items-center justify-between mt-5 px-3 max-w-xl">
           {/* Left Slide Count */}
-          <div className="text-xs text-[var(--muted)] font-mono hidden sm:block">
+          <div className="text-xs text-[var(--muted)] font-mono min-w-12">
             {totalPhotos > 0 ? `${activeIndex + 1} / ${totalPhotos}` : '0 / 0'}
           </div>
 
           {/* Centered Minimalist Circular Arrow Controls */}
-          <div className="flex items-center gap-3 mx-auto">
+          <div className="flex items-center gap-2 sm:gap-3 mx-auto">
             <button
               onClick={handlePrev}
-              className="w-10 h-10 rounded-full border border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] hover:border-[var(--accent)] hover:text-[var(--accent)] flex items-center justify-center transition-all shadow-sm active:scale-95 cursor-pointer group"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] hover:border-[var(--accent)] hover:text-[var(--accent)] flex items-center justify-center transition-all shadow-sm active:scale-95 cursor-pointer group"
               title="Previous photo (←)"
               aria-label="Previous photo"
             >
@@ -549,14 +573,14 @@ export const SharedPhotoGallery: React.FC = () => {
             </button>
 
             {/* Slide Navigation Dots */}
-            <div className="flex items-center gap-1.5 px-2">
+            <div className="flex items-center gap-1.5 px-1 sm:px-2">
               {photos.map((_, i) => (
                 <button
                   key={i}
                   onClick={() => setActiveIndex(i)}
                   className={`transition-all rounded-full cursor-pointer ${
                     i === activeIndex
-                      ? 'w-5 h-2 bg-[var(--accent)]'
+                      ? 'w-4 sm:w-5 h-2 bg-[var(--accent)]'
                       : 'w-2 h-2 bg-[var(--line)] hover:bg-[var(--muted)]'
                   }`}
                   aria-label={`Go to slide ${i + 1}`}
@@ -566,7 +590,7 @@ export const SharedPhotoGallery: React.FC = () => {
 
             <button
               onClick={handleNext}
-              className="w-10 h-10 rounded-full border border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] hover:border-[var(--accent)] hover:text-[var(--accent)] flex items-center justify-center transition-all shadow-sm active:scale-95 cursor-pointer group"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] hover:border-[var(--accent)] hover:text-[var(--accent)] flex items-center justify-center transition-all shadow-sm active:scale-95 cursor-pointer group"
               title="Next photo (→)"
               aria-label="Next photo"
             >
@@ -579,10 +603,10 @@ export const SharedPhotoGallery: React.FC = () => {
             onClick={() => {
               if (photos[activeIndex]) setSelectedPhoto(photos[activeIndex]);
             }}
-            className="p-2.5 rounded-full border border-[var(--line)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--ink)] hover:border-[var(--accent)] transition-all shadow-sm cursor-pointer"
+            className="p-2 sm:p-2.5 rounded-full border border-[var(--line)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--ink)] hover:border-[var(--accent)] transition-all shadow-sm cursor-pointer"
             title="Open lightbox view"
           >
-            <Maximize2 className="w-4 h-4" />
+            <Maximize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
         </div>
       </>
