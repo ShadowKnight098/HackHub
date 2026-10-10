@@ -1,4 +1,4 @@
-import type { Team, TeamMember } from '@/types/schemas/team';
+import type { Team, TeamMember, TeamMilestone, FacultyReview } from '@/types/schemas/team';
 import type { Note, NoteComment } from '@/types/schemas/note';
 import type { Resource } from '@/types/schemas/resource';
 import type { Conversation, Message } from '@/types/schemas/chat';
@@ -7,6 +7,47 @@ import type { HackathonId, ConversationId } from '@/types/ids';
 
 const DB_KEY = 'hackhub_db_v3_live';
 const LOCATION_KEY = 'hackhub_cached_location';
+
+export const DEFAULT_FACULTY_GUIDE = {
+  id: 'fac-1',
+  name: 'Dr. Aris Thorne',
+  email: 'aris.thorne@faculty.edu',
+  department: 'Dept. of Computer Science & Engineering',
+};
+
+export const DEFAULT_ACADEMIC_MILESTONES: TeamMilestone[] = [
+  {
+    id: 'm-phase-1',
+    phase: 1,
+    title: 'Phase 1: Synopsis & Architecture Spec',
+    dueDate: '2026-10-15',
+    status: 'approved',
+    submissionUrl: 'https://github.com/project-synopsis',
+    submissionNotes: 'System architecture diagram, requirements spec, and ERD uploaded.',
+    submittedAt: new Date(Date.now() - 86400000 * 3).toISOString(),
+    reviewedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+    reviewedBy: 'Dr. Aris Thorne (Faculty Guide)',
+    facultyRemarks: 'Problem statement is well-scoped and architectural separation looks solid. Approved for prototype phase.',
+    score: 9.0,
+  },
+  {
+    id: 'm-phase-2',
+    phase: 2,
+    title: 'Phase 2: Midterm Prototype & Core APIs',
+    dueDate: '2026-10-25',
+    status: 'pending_review',
+    submissionUrl: 'https://github.com/team-repo',
+    submissionNotes: 'Backend CRUD APIs complete and Supabase auth integrated. Ready for mid-term review.',
+    submittedAt: new Date().toISOString(),
+  },
+  {
+    id: 'm-phase-3',
+    phase: 3,
+    title: 'Phase 3: Final Demo, Evaluation & Documentation',
+    dueDate: '2026-11-10',
+    status: 'in_progress',
+  },
+];
 
 export interface CachedLocation {
   coords: [number, number]; // [lng, lat]
@@ -41,6 +82,7 @@ interface DatabaseSchema {
   messages: Record<string, Message[]>;
   announcements: Announcement[];
   photos: SharedPhoto[];
+  facultyReviews?: FacultyReview[];
   registeredProfiles?: Array<{
     id: string;
     email: string;
@@ -154,6 +196,9 @@ export const db = {
         return {
           ...t,
           members: members.length > 0 ? members : t.members || [],
+          milestones: t.milestones && t.milestones.length > 0 ? t.milestones : DEFAULT_ACADEMIC_MILESTONES,
+          assignedFaculty: t.assignedFaculty || DEFAULT_FACULTY_GUIDE,
+          facultyReviews: t.facultyReviews || [],
         };
       });
     },
@@ -164,11 +209,19 @@ export const db = {
       return {
         ...team,
         members: members.length > 0 ? members : team.members || [],
+        milestones: team.milestones && team.milestones.length > 0 ? team.milestones : DEFAULT_ACADEMIC_MILESTONES,
+        assignedFaculty: team.assignedFaculty || DEFAULT_FACULTY_GUIDE,
+        facultyReviews: team.facultyReviews || [],
       };
     },
     insert(team: Team): Team {
       // 1. Insert team record
-      const teamRecord = { ...team };
+      const teamRecord = {
+        ...team,
+        milestones: team.milestones && team.milestones.length > 0 ? team.milestones : DEFAULT_ACADEMIC_MILESTONES,
+        assignedFaculty: team.assignedFaculty || DEFAULT_FACULTY_GUIDE,
+        facultyReviews: team.facultyReviews || [],
+      };
       dbInstance.teams.unshift(teamRecord);
 
       // 2. Insert member records as separate distinct records
@@ -209,6 +262,92 @@ export const db = {
         ...updates,
         id: current.id,
         createdAt: current.createdAt,
+        updatedAt: new Date().toISOString(),
+      };
+      dbInstance.teams[idx] = updated;
+      saveDatabase(dbInstance);
+      return updated;
+    },
+    updateMilestone(
+      teamId: string,
+      milestoneId: string,
+      updates: Partial<TeamMilestone>,
+      reviewRemarks?: { facultyName: string; remarks: string; score?: number }
+    ): Team | undefined {
+      const idx = dbInstance.teams.findIndex((t) => t.id === teamId);
+      if (idx === -1) return undefined;
+      const current = dbInstance.teams[idx]!;
+      const currentMilestones = current.milestones && current.milestones.length > 0 ? [...current.milestones] : [...DEFAULT_ACADEMIC_MILESTONES];
+
+      const mIdx = currentMilestones.findIndex((m) => m.id === milestoneId);
+      if (mIdx !== -1) {
+        const prev = currentMilestones[mIdx]!;
+        const updatedStatus = updates.status || prev.status;
+        const updatedScore = reviewRemarks?.score !== undefined ? reviewRemarks.score : (updates.score !== undefined ? updates.score : prev.score);
+        const updatedRemarks = reviewRemarks?.remarks !== undefined ? reviewRemarks.remarks : (updates.facultyRemarks !== undefined ? updates.facultyRemarks : prev.facultyRemarks);
+        const updatedReviewedBy = reviewRemarks?.facultyName || updates.reviewedBy || prev.reviewedBy;
+        const updatedReviewedAt = updatedStatus === 'approved' || updatedStatus === 'needs_revision' ? new Date().toISOString() : prev.reviewedAt;
+
+        currentMilestones[mIdx] = {
+          ...prev,
+          ...updates,
+          status: updatedStatus,
+          score: updatedScore,
+          facultyRemarks: updatedRemarks,
+          reviewedBy: updatedReviewedBy,
+          reviewedAt: updatedReviewedAt,
+        };
+      }
+
+      const reviews = current.facultyReviews ? [...current.facultyReviews] : [];
+      if (reviewRemarks && reviewRemarks.remarks.trim()) {
+        reviews.unshift({
+          id: `rev-${Date.now()}`,
+          facultyId: 'fac-1',
+          facultyName: reviewRemarks.facultyName,
+          milestoneTitle: currentMilestones[mIdx]?.title || 'Milestone Evaluation',
+          status: updates.status || 'in_progress',
+          remarks: reviewRemarks.remarks,
+          score: reviewRemarks.score,
+          createdAt: new Date().toISOString(),
+        });
+      }
+
+      const updated: Team = {
+        ...current,
+        milestones: currentMilestones,
+        facultyReviews: reviews,
+        updatedAt: new Date().toISOString(),
+      };
+      dbInstance.teams[idx] = updated;
+      saveDatabase(dbInstance);
+      return updated;
+    },
+    submitMilestone(
+      teamId: string,
+      milestoneId: string,
+      submission: { submissionUrl: string; submissionNotes: string }
+    ): Team | undefined {
+      const idx = dbInstance.teams.findIndex((t) => t.id === teamId);
+      if (idx === -1) return undefined;
+      const current = dbInstance.teams[idx]!;
+      const currentMilestones = current.milestones && current.milestones.length > 0 ? [...current.milestones] : [...DEFAULT_ACADEMIC_MILESTONES];
+
+      const mIdx = currentMilestones.findIndex((m) => m.id === milestoneId);
+      if (mIdx !== -1) {
+        const prev = currentMilestones[mIdx]!;
+        currentMilestones[mIdx] = {
+          ...prev,
+          submissionUrl: submission.submissionUrl,
+          submissionNotes: submission.submissionNotes,
+          submittedAt: new Date().toISOString(),
+          status: 'pending_review',
+        };
+      }
+
+      const updated: Team = {
+        ...current,
+        milestones: currentMilestones,
         updatedAt: new Date().toISOString(),
       };
       dbInstance.teams[idx] = updated;
@@ -310,6 +449,12 @@ export const db = {
   announcements: {
     getAll(): Announcement[] {
       return [...dbInstance.announcements];
+    },
+    insert(announcement: Announcement): Announcement {
+      if (!dbInstance.announcements) dbInstance.announcements = [];
+      dbInstance.announcements.unshift(announcement);
+      saveDatabase(dbInstance);
+      return announcement;
     },
   },
 

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
   Users,
+  GraduationCap,
   FolderGit2,
   MapPin,
   FileText,
@@ -28,6 +29,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard',     path: '/',             icon: LayoutDashboard },
+  { label: 'Faculty Hub',   path: '/faculty',      icon: GraduationCap },
   { label: 'Teams',         path: '/teams',         icon: Users },
   { label: 'Resources',     path: '/resources',     icon: FolderGit2 },
   { label: 'Venue Map',     path: '/map',           icon: MapPin },

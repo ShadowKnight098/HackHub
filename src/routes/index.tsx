@@ -18,6 +18,7 @@ const NoteList = lazy(() => import('@/features/notes').then((m) => ({ default: m
 const ChatLayout = lazy(() => import('@/features/chat').then((m) => ({ default: m.ChatLayout })));
 const AnnouncementList = lazy(() => import('@/features/announcements').then((m) => ({ default: m.AnnouncementList })));
 const AdminDashboard = lazy(() => import('@/features/admin').then((m) => ({ default: m.AdminDashboard })));
+const FacultyHub = lazy(() => import('@/features/faculty').then((m) => ({ default: m.FacultyHub })));
 
 const PageLoader = () => (
   <div className="flex justify-center items-center min-h-[60vh]">
@@ -88,6 +89,7 @@ export const AppRoutes: React.FC = () => {
           <Route path="/notes" element={<NoteList />} />
           <Route path="/chat" element={<ChatLayout />} />
           <Route path="/announcements" element={<AnnouncementList />} />
+          <Route path="/faculty" element={<FacultyHub />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/profile" element={<UserProfile />} />
         </Route>

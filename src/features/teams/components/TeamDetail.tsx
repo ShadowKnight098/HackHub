@@ -14,8 +14,11 @@ import {
 } from 'lucide-react';
 import { useTeamDetail } from '../hooks/useTeams';
 import { AddMemberModal } from './AddMemberModal';
+import { MilestoneTracker } from './MilestoneTracker';
+import { FacultyReviewModal } from '@/features/faculty/components/FacultyReviewModal';
 import { useAuth } from '@/features/auth';
 import type { TeamId } from '@/types/ids';
+import type { TeamMilestone } from '@/types/schemas/team';
 
 export const TeamDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -23,6 +26,7 @@ export const TeamDetail: React.FC = () => {
   const { profile } = useAuth();
   const { data: team, isLoading, isError } = useTeamDetail(id as TeamId);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+  const [reviewingMilestone, setReviewingMilestone] = useState<TeamMilestone | null>(null);
 
   if (isLoading) {
     return (
@@ -141,6 +145,13 @@ export const TeamDetail: React.FC = () => {
         </div>
       </div>
 
+      {/* ── ACADEMIC MILESTONE & FACULTY EVALUATION PIPELINE ── */}
+      <MilestoneTracker
+        team={team}
+        isLead={Boolean(isLead)}
+        onOpenFacultyReview={(m) => setReviewingMilestone(m)}
+      />
+
       {/* Roster & Members section */}
       <div>
         <div className="flex items-center justify-between mb-4">
@@ -197,6 +208,16 @@ export const TeamDetail: React.FC = () => {
         teamId={team.id}
         teamName={team.name}
       />
+
+      {/* Faculty Review Modal */}
+      {reviewingMilestone && (
+        <FacultyReviewModal
+          isOpen={Boolean(reviewingMilestone)}
+          onClose={() => setReviewingMilestone(null)}
+          team={team}
+          initialMilestone={reviewingMilestone}
+        />
+      )}
     </motion.div>
   );
 };

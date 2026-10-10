@@ -19,7 +19,8 @@ interface EditorialNavOverlayProps {
 
 // Exactly matched names to the previous app navigation
 const PRIMARY_LINKS = [
-  { label: 'Dashboard',     path: '/',              sublabel: 'Metrics & prototype stream' },
+  { label: 'Dashboard',     path: '/',              sublabel: 'Metrics & project telemetry' },
+  { label: 'Faculty Hub',   path: '/faculty',       sublabel: 'Milestone tracking & reviews' },
   { label: 'Teams',         path: '/teams',         sublabel: 'Rosters, tables & projects' },
   { label: 'Resources',     path: '/resources',     sublabel: 'API specs, starters & files' },
   { label: 'Venue Map',     path: '/map',           sublabel: 'Floor plan, tables & live GPS' },
@@ -29,6 +30,7 @@ const PRIMARY_LINKS = [
 ];
 
 const SECONDARY_LINKS = [
+  { label: 'FACULTY SUPERVISION', path: '/faculty' },
   { label: 'DISCORD CHAT',    path: '/chat' },
   { label: 'MENTOR HELPDESK', path: '/map' },
   { label: 'API PLAYGROUND',  path: '/resources' },

@@ -81,9 +81,9 @@ export const UserProfile: React.FC = () => {
                   onChange={(e) => setRole(e.target.value as UserRole)}
                   className="w-full appearance-none px-3.5 py-2.5 pr-9 text-sm rounded-lg border border-[var(--line)] bg-[var(--bg)] text-[var(--ink)] hover:border-[var(--accent)] focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] transition-colors cursor-pointer shadow-2xs"
                 >
-                  <option value={UserRole.STUDENT}>Student / Participant</option>
-                  <option value={UserRole.FACULTY}>Faculty / Mentor</option>
-                  <option value={UserRole.ADMIN}>Organizer / Admin (Grants Admin Dashboard Access)</option>
+                  <option value={UserRole.STUDENT}>Student / Project Member</option>
+                  <option value={UserRole.FACULTY}>Faculty / Project Guide & Evaluator</option>
+                  <option value={UserRole.ADMIN}>Department Coordinator / Administrator</option>
                 </select>
                 <ChevronDown className="w-4 h-4 text-[var(--muted)] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>

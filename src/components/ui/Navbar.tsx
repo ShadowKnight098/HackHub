@@ -16,6 +16,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import {
   Flame,
   Users,
+  GraduationCap,
   FolderGit2,
   MapPin,
   FileText,
@@ -39,6 +40,7 @@ export const Navbar: React.FC = () => {
 
   const navLinks = [
     { label: 'Dashboard', path: '/', icon: Flame },
+    { label: 'Faculty Hub', path: '/faculty', icon: GraduationCap },
     { label: 'Teams', path: '/teams', icon: Users },
     { label: 'Resources', path: '/resources', icon: FolderGit2 },
     { label: 'Venue Map', path: '/map', icon: MapPin },

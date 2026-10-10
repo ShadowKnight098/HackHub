@@ -9,6 +9,9 @@ import {
   Plus,
   Bell,
   ChevronRight,
+  GraduationCap,
+  Award,
+  Clock,
 } from 'lucide-react';
 import { Avatar, AvatarGroup } from '@heroui/react';
 import { useAuth } from '@/features/auth';
@@ -38,6 +41,10 @@ export const Dashboard: React.FC = () => {
   const myTeam = profile
     ? teams.find((t) => t.members.some((m) => m.userId === profile.id))
     : null;
+
+  const pendingReviewsCount = teams.reduce((acc, t) => {
+    return acc + (t.milestones || []).filter((m) => m.status === 'pending_review').length;
+  }, 0);
 
   return (
     <motion.div
@@ -90,6 +97,48 @@ export const Dashboard: React.FC = () => {
             <MapPin className="w-3.5 h-3.5 text-[var(--moss)]" />
             <span>Floor Map</span>
           </button>
+        </div>
+      </motion.div>
+
+      {/* ── FACULTY SUPERVISION & MILESTONE TRACKING BANNER ── */}
+      <motion.div variants={fadeUp}>
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[var(--surface)] via-[var(--surface)] to-[var(--bg)] border border-[var(--line)] shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-[var(--accent)]/15 text-[var(--accent)] flex items-center justify-center shrink-0 border border-[var(--accent)]/30">
+              <GraduationCap className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-heading text-sm sm:text-base font-bold text-[var(--ink)]">
+                  Faculty Project Tracking & Evaluation
+                </h3>
+                {pendingReviewsCount > 0 ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 animate-pulse">
+                    <Clock className="w-3 h-3" />
+                    {pendingReviewsCount} Review{pendingReviewsCount === 1 ? '' : 's'} Due
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                    Active Supervision
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-[var(--muted)] mt-0.5">
+                Supervise student team milestones, verify architecture & prototype deliverables, and provide graded feedback remarks.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 shrink-0 self-start md:self-auto">
+            <button
+              onClick={() => navigate('/faculty')}
+              className="commons-btn-primary py-2 px-3.5 text-xs font-medium flex items-center gap-1.5 cursor-pointer shadow-xs"
+            >
+              <Award className="w-3.5 h-3.5" />
+              <span>Open Faculty Hub</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       </motion.div>
 

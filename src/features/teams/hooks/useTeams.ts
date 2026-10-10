@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { teamsService } from '@/services/teams';
-import type { Team, CreateTeamInput } from '@/types/schemas/team';
+import type { Team, CreateTeamInput, TeamMilestone } from '@/types/schemas/team';
 import type { TeamId, UserId } from '@/types/ids';
 
 const TEAMS_QUERY_KEY = ['teams', 'list'];
@@ -57,6 +57,31 @@ export function useTeams(hackathonId?: string) {
     },
   });
 
+  const updateMilestoneMutation = useMutation({
+    mutationFn: (args: {
+      teamId: string;
+      milestoneId: string;
+      updates: Partial<TeamMilestone>;
+      reviewRemarks?: { facultyName: string; remarks: string; score?: number };
+    }) => teamsService.updateMilestone(args.teamId, args.milestoneId, args.updates, args.reviewRemarks),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: TEAMS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['teams', 'detail', variables.teamId] });
+    },
+  });
+
+  const submitMilestoneMutation = useMutation({
+    mutationFn: (args: {
+      teamId: string;
+      milestoneId: string;
+      submission: { submissionUrl: string; submissionNotes: string };
+    }) => teamsService.submitMilestone(args.teamId, args.milestoneId, args.submission),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: TEAMS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['teams', 'detail', variables.teamId] });
+    },
+  });
+
   return {
     teams,
     isLoading,
@@ -71,6 +96,10 @@ export function useTeams(hackathonId?: string) {
     isLeaving: leaveTeamMutation.isPending,
     addTeamMember: addTeamMemberMutation.mutateAsync,
     isAddingMember: addTeamMemberMutation.isPending,
+    updateMilestone: updateMilestoneMutation.mutateAsync,
+    isUpdatingMilestone: updateMilestoneMutation.isPending,
+    submitMilestone: submitMilestoneMutation.mutateAsync,
+    isSubmittingMilestone: submitMilestoneMutation.isPending,
   };
 }
 

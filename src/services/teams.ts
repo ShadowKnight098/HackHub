@@ -1,10 +1,10 @@
 import { supabase } from '@/lib/supabase';
 import { env } from '@/lib/env';
-import { db } from '@/lib/db';
+import { db, DEFAULT_ACADEMIC_MILESTONES, DEFAULT_FACULTY_GUIDE } from '@/lib/db';
 import { AppError, ErrorCode } from '@/types/errors';
-import type { Team, CreateTeamInput, TeamMember } from '@/types/schemas/team';
+import type { Team, CreateTeamInput, TeamMember, TeamMilestone } from '@/types/schemas/team';
 import type { TeamId, HackathonId, UserId } from '@/types/ids';
-import { TeamMemberRole } from '@/types/enums';
+import { TeamMemberRole, UserRole } from '@/types/enums';
 
 export const ACTIVE_HACKATHON_ID = '466eebd5-875f-423b-b1f1-10b93bebccf6';
 export const DEFAULT_USER_ID = '80bb5377-7cf9-49e2-b8d7-254193c7a16c';
@@ -66,6 +66,9 @@ export const teamsService = {
             createdBy: row.created_by as UserId,
             createdAt: row.created_at,
             updatedAt: row.updated_at,
+            milestones: DEFAULT_ACADEMIC_MILESTONES,
+            assignedFaculty: DEFAULT_FACULTY_GUIDE,
+            facultyReviews: [],
             members: (row.team_members || []).map((m: any): TeamMember => ({
               id: m.id,
               teamId: m.team_id as TeamId,
@@ -150,6 +153,9 @@ export const teamsService = {
             createdBy: data.created_by as UserId,
             createdAt: data.created_at,
             updatedAt: data.updated_at,
+            milestones: DEFAULT_ACADEMIC_MILESTONES,
+            assignedFaculty: DEFAULT_FACULTY_GUIDE,
+            facultyReviews: [],
             members: (data.team_members || []).map((m: any): TeamMember => ({
               id: m.id,
               teamId: m.team_id as TeamId,
@@ -232,6 +238,9 @@ export const teamsService = {
           createdBy: teamData.created_by as UserId,
           createdAt: teamData.created_at,
           updatedAt: teamData.updated_at,
+          milestones: DEFAULT_ACADEMIC_MILESTONES,
+          assignedFaculty: DEFAULT_FACULTY_GUIDE,
+          facultyReviews: [],
           members: [
             {
               id: 'mem-' + teamData.id.slice(0, 8),
@@ -272,6 +281,9 @@ export const teamsService = {
       createdBy: validUserId as UserId,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      milestones: DEFAULT_ACADEMIC_MILESTONES,
+      assignedFaculty: DEFAULT_FACULTY_GUIDE,
+      facultyReviews: [],
       members: [
         {
           id: 'mem-' + Math.random().toString(36).substring(2, 7),
@@ -480,5 +492,53 @@ export const teamsService = {
     }
 
     return newMember;
+  },
+
+  async updateMilestone(
+    teamId: string,
+    milestoneId: string,
+    updates: Partial<TeamMilestone>,
+    reviewRemarks?: { facultyName: string; remarks: string; score?: number }
+  ): Promise<Team> {
+    const updated = db.teams.updateMilestone(teamId, milestoneId, updates, reviewRemarks);
+    if (!updated) {
+      throw new AppError(ErrorCode.NOT_FOUND, 'Team not found');
+    }
+
+    // Automatically post announcement notification if review remarks were added
+    if (reviewRemarks && reviewRemarks.remarks.trim()) {
+      try {
+        db.announcements.insert({
+          id: `ann-${Date.now()}` as any,
+          hackathonId: updated.hackathonId,
+          authorId: 'fac-1' as any,
+          title: `Faculty Review: ${updated.name}`,
+          content: `${reviewRemarks.facultyName} updated ${updates.status === 'approved' ? '✅ Approved' : updates.status === 'needs_revision' ? '⚠️ Needs Revision' : 'ℹ️ Status'} for ${updates.title || 'milestone'}. Remarks: "${reviewRemarks.remarks}"`,
+          isUrgent: updates.status === 'needs_revision',
+          author: {
+            id: 'fac-1' as any,
+            fullName: reviewRemarks.facultyName,
+            role: UserRole.FACULTY,
+          },
+          createdAt: new Date().toISOString(),
+        });
+      } catch (e) {
+        console.warn('Failed to insert review announcement:', e);
+      }
+    }
+
+    return updated;
+  },
+
+  async submitMilestone(
+    teamId: string,
+    milestoneId: string,
+    submission: { submissionUrl: string; submissionNotes: string }
+  ): Promise<Team> {
+    const updated = db.teams.submitMilestone(teamId, milestoneId, submission);
+    if (!updated) {
+      throw new AppError(ErrorCode.NOT_FOUND, 'Team not found');
+    }
+    return updated;
   },
 };
