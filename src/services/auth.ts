@@ -196,19 +196,35 @@ export const authService = {
 
       if (data?.user) {
         newProfile.id = data.user.id as UserId;
-      }
+        try {
+          await supabase.from('profiles').upsert({
+            id: data.user.id,
+            email,
+            full_name: name,
+            bio: bioText,
+            role: 'student',
+          }, { onConflict: 'id' });
+        } catch (upsertErr) {
+          console.warn('Public profiles upsert notice:', upsertErr);
+        }
+      } else {
+        // If Supabase Auth throttles signup (429 email rate limit),
+        // check if user's profile with this email already exists in profiles
+        try {
+          const { data: existing } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('email', email)
+            .maybeSingle();
 
-      // Upsert profile into public.profiles table so other participants and teams can query them
-      try {
-        await supabase.from('profiles').upsert({
-          id: newProfile.id,
-          email,
-          full_name: name,
-          bio: bioText,
-          role: 'student',
-        });
-      } catch (upsertErr) {
-        console.warn('Public profiles upsert notice:', upsertErr);
+          if (existing?.id) {
+            newProfile.id = existing.id as UserId;
+            await supabase.from('profiles').update({
+              full_name: name,
+              bio: bioText,
+            }).eq('id', existing.id);
+          }
+        } catch {}
       }
     } catch (err) {
       console.warn('Supabase signUp network exception (local profile active):', err);
