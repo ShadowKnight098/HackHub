@@ -21,8 +21,7 @@ if (!parsed.success) {
 
 export const env = {
   supabaseUrl: import.meta.env.VITE_SUPABASE_URL || 'https://mfvselzziedqohiiswqy.supabase.co',
-  supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || '',
-  supabaseSecretKey: import.meta.env.VITE_SUPABASE_SECRET_KEY || '',
+  supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '',
   mapStyleUrl: import.meta.env.VITE_MAP_STYLE_URL || 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
-  isConfigured: Boolean(import.meta.env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_ANON_KEY),
+  isConfigured: Boolean(import.meta.env.VITE_SUPABASE_URL && (import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY)),
 };

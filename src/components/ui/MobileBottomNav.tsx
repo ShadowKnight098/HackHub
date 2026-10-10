@@ -6,7 +6,7 @@ import {
   Users,
   MapPin,
   MessageSquare,
-  User,
+  Pin,
 } from 'lucide-react';
 import { useAuth } from '@/features/auth';
 
@@ -20,11 +20,11 @@ interface MobileNavItem {
 }
 
 const NAV_ITEMS: MobileNavItem[] = [
-  { id: 'home',    label: 'Home',    path: '/',        icon: Home },
-  { id: 'teams',   label: 'Teams',   path: '/teams',   icon: Users },
-  { id: 'map',     label: 'Map',     path: '/map',     icon: MapPin, isCenter: true },
-  { id: 'chat',    label: 'Chat',    path: '/chat',    icon: MessageSquare, badge: 3 },
-  { id: 'profile', label: 'Me',      path: '/profile', icon: User },
+  { id: 'home',  label: 'Home',  path: '/',      icon: Home },
+  { id: 'teams', label: 'Teams', path: '/teams', icon: Users },
+  { id: 'map',   label: 'Map',   path: '/map',   icon: MapPin, isCenter: true },
+  { id: 'chat',  label: 'Chat',  path: '/chat',  icon: MessageSquare, badge: 3 },
+  { id: 'notes', label: 'Notes', path: '/notes', icon: Pin },
 ];
 
 export const MobileBottomNav: React.FC = () => {

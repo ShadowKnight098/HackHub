@@ -91,12 +91,13 @@ export const authService = {
           return liveProfile;
         }
       } else {
-        // 2. If user doesn't exist, auto-provision user account with HackHub@2026
-        const { data: newUser } = await supabase.auth.admin.createUser({
+        // 2. If user doesn't exist, auto-provision user account with client signUp
+        const { data: newUser } = await supabase.auth.signUp({
           email,
           password,
-          email_confirm: true,
-          user_metadata: { full_name: fullName, roll_number: rollNo, role: 'student' },
+          options: {
+            data: { full_name: fullName, roll_number: rollNo, role: 'student' },
+          },
         });
 
         const userId = newUser?.user?.id || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : '80bb5377-7cf9-49e2-b8d7-254193c7a16c');
@@ -151,14 +152,20 @@ export const authService = {
   },
 
   async signUp(credentials: SignUpCredentials): Promise<Profile> {
+    const rollNo = credentials.rollNumber?.trim() || '';
+    const name: string = credentials.fullName?.trim() || rollNo || credentials.email.split('@')[0] || 'Participant';
+    const bioText = rollNo ? `Roll No: ${rollNo}` : '';
+    const email = credentials.email.trim().toLowerCase();
+    const role = credentials.role || UserRole.STUDENT;
+
     const newProfile: Profile = {
-      id: ('usr-' + Math.random().toString(36).substring(2, 9)) as UserId,
-      email: credentials.email,
-      fullName: credentials.fullName,
+      id: (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : ('usr-' + Math.random().toString(36).substring(2, 9))) as UserId,
+      email,
+      fullName: name,
       avatarUrl: null,
-      bio: '',
+      bio: bioText,
       skills: [],
-      role: credentials.role,
+      role,
       departmentId: null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -166,12 +173,13 @@ export const authService = {
 
     try {
       const { data, error } = await supabase.auth.signUp({
-        email: credentials.email,
+        email,
         password: credentials.password,
         options: {
           data: {
-            full_name: credentials.fullName,
-            role: credentials.role,
+            full_name: name,
+            roll_number: rollNo,
+            role: 'student',
           },
         },
       });
@@ -181,9 +189,10 @@ export const authService = {
         try {
           await supabase.from('profiles').upsert({
             id: data.user.id,
-            email: credentials.email,
-            full_name: credentials.fullName,
-            role: credentials.role,
+            email,
+            full_name: name,
+            bio: bioText,
+            role: 'student',
           });
         } catch {}
       }

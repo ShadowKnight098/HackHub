@@ -18,7 +18,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({ team, onJoin, isJoining }) =
   const isMember     = profile && team.members.some((m) => m.userId === profile.id);
   const isLead       = profile && team.members.some((m) => m.userId === profile.id && m.role === 'lead');
   const leadMember   = team.members.find((m) => m.role === 'lead') || team.members[0];
-  const leadName     = leadMember?.user?.fullName || 'Alex Rivera (Lead)';
+  const leadName     = leadMember?.user?.fullName || 'Team Lead';
 
   return (
     <motion.div

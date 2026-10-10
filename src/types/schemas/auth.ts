@@ -29,7 +29,8 @@ export type SignInCredentials = z.infer<typeof SignInCredentialsSchema>;
 export const SignUpCredentialsSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
-  fullName: z.string().min(2, 'Name must be at least 2 characters'),
+  rollNumber: z.string().min(1, 'Roll number is required'),
+  fullName: z.string().optional(),
   role: z.nativeEnum(UserRole).default(UserRole.STUDENT),
 });
 

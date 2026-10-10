@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { env } from '@/lib/env';
 import { db } from '@/lib/db';
-import { AppError, toAppError, ErrorCode } from '@/types/errors';
+import { AppError, ErrorCode } from '@/types/errors';
 import type { Team, CreateTeamInput, TeamMember } from '@/types/schemas/team';
 import type { TeamId, HackathonId, UserId } from '@/types/ids';
 import { TeamMemberRole } from '@/types/enums';
@@ -241,8 +241,8 @@ export const teamsService = {
               joinedAt: new Date().toISOString(),
               user: {
                 id: validUserId as UserId,
-                fullName: creatorProfile?.fullName || 'Alex Rivera',
-                email: creatorProfile?.email || 'hacker@hackhub.dev',
+                fullName: creatorProfile?.fullName || 'Team Lead',
+                email: creatorProfile?.email || '',
               },
             },
           ],
@@ -281,8 +281,8 @@ export const teamsService = {
           joinedAt: new Date().toISOString(),
           user: {
             id: validUserId as UserId,
-            fullName: creatorProfile?.fullName || 'Alex Rivera',
-            email: creatorProfile?.email || 'hacker@hackhub.dev',
+            fullName: creatorProfile?.fullName || 'Team Lead',
+            email: creatorProfile?.email || '',
           },
         },
       ],
@@ -307,7 +307,7 @@ export const teamsService = {
 
     if (team) {
       if (!team.members.some((m) => m.userId === userId || m.userId === validUserId)) {
-        team.members.push({
+        const memberRecord: TeamMember = {
           id: 'mem-' + Math.random().toString(36).substring(2, 7),
           teamId,
           userId: (team.id.includes('-') && team.id.length === 36 ? validUserId : userId) as UserId,
@@ -318,7 +318,9 @@ export const teamsService = {
             fullName: memberName,
             email: memberEmail,
           },
-        });
+        };
+        db.teamMembers.insert(memberRecord);
+        team.members.push(memberRecord);
         db.teams.update(teamId, { members: team.members });
       }
     }
@@ -340,26 +342,29 @@ export const teamsService = {
   },
 
   async leaveTeam(teamId: TeamId, userId: UserId): Promise<void> {
-    if (!env.isConfigured) {
-      const teams = await this.listTeams();
-      const team = teams.find((t) => t.id === teamId);
-      if (team) {
-        team.members = team.members.filter((m) => m.userId !== userId);
-        localStorage.setItem('hackhub_teams', JSON.stringify(teams));
-      }
-      return;
+    const validUserId = toValidUuid(userId, DEFAULT_USER_ID);
+    // Remove from local individual teamMembers table
+    db.teamMembers.delete(teamId, userId);
+    db.teamMembers.delete(teamId, validUserId);
+
+    const team = db.teams.getById(teamId);
+    if (team) {
+      team.members = team.members.filter((m) => m.userId !== userId && m.userId !== validUserId);
+      db.teams.update(teamId, { members: team.members });
     }
 
-    try {
-      const { error } = await supabase
-        .from('team_members')
-        .delete()
-        .eq('team_id', teamId)
-        .eq('user_id', userId);
+    if (env.isConfigured && UUID_REGEX.test(teamId)) {
+      try {
+        const { error } = await supabase
+          .from('team_members')
+          .delete()
+          .eq('team_id', teamId)
+          .eq('user_id', validUserId);
 
-      if (error) throw toAppError(error);
-    } catch (err) {
-      throw toAppError(err);
+        if (error) console.warn('Supabase leaveTeam warning:', error);
+      } catch (err) {
+        console.warn('Supabase leaveTeam exception:', err);
+      }
     }
   },
 

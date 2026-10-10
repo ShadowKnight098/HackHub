@@ -1,4 +1,4 @@
-import type { Team } from '@/types/schemas/team';
+import type { Team, TeamMember } from '@/types/schemas/team';
 import type { Note, NoteComment } from '@/types/schemas/note';
 import type { Resource } from '@/types/schemas/resource';
 import type { Conversation, Message } from '@/types/schemas/chat';
@@ -33,6 +33,7 @@ export interface SharedPhoto {
 
 interface DatabaseSchema {
   teams: Team[];
+  teamMembers: TeamMember[]; // Stored as distinct records per member
   notes: Note[];
   noteComments: Record<string, NoteComment[]>;
   resources: Resource[];
@@ -44,6 +45,7 @@ interface DatabaseSchema {
 
 // Clean, live database with zero hardcoded mock records
 const INITIAL_TEAMS: Team[] = [];
+const INITIAL_TEAM_MEMBERS: TeamMember[] = [];
 const INITIAL_NOTES: Note[] = [];
 const INITIAL_RESOURCES: Resource[] = [];
 const INITIAL_CONVERSATIONS: Conversation[] = [
@@ -73,6 +75,7 @@ function loadDatabase(): DatabaseSchema {
     if (!raw) {
       const initial: DatabaseSchema = {
         teams: INITIAL_TEAMS,
+        teamMembers: INITIAL_TEAM_MEMBERS,
         notes: INITIAL_NOTES,
         noteComments: {},
         resources: INITIAL_RESOURCES,
@@ -86,11 +89,31 @@ function loadDatabase(): DatabaseSchema {
     }
     const parsed = JSON.parse(raw);
     if (!parsed.photos) parsed.photos = [];
+    if (!parsed.teamMembers) {
+      parsed.teamMembers = [];
+      // Migrate embedded members into separate individual records
+      if (Array.isArray(parsed.teams)) {
+        parsed.teams.forEach((t: any) => {
+          if (Array.isArray(t.members)) {
+            t.members.forEach((m: any) => {
+              const already = parsed.teamMembers.some((existing: any) => existing.id === m.id);
+              if (!already) {
+                parsed.teamMembers.push({
+                  ...m,
+                  teamId: t.id,
+                });
+              }
+            });
+          }
+        });
+      }
+    }
     return parsed;
   } catch (err) {
     console.error('Failed to parse database from localStorage', err);
     return {
       teams: [],
+      teamMembers: [],
       notes: [],
       noteComments: {},
       resources: [],
@@ -113,16 +136,45 @@ function saveDatabase(data: DatabaseSchema) {
 let dbInstance: DatabaseSchema = loadDatabase();
 
 export const db = {
-  // Teams
+  // Teams Collection (Each team stored as a distinct record)
   teams: {
     getAll(): Team[] {
-      return [...dbInstance.teams];
+      return dbInstance.teams.map((t) => {
+        // Hydrate from distinct teamMembers records
+        const members = dbInstance.teamMembers.filter((m) => m.teamId === t.id);
+        return {
+          ...t,
+          members: members.length > 0 ? members : t.members || [],
+        };
+      });
     },
     getById(id: string): Team | undefined {
-      return dbInstance.teams.find((t) => t.id === id);
+      const team = dbInstance.teams.find((t) => t.id === id);
+      if (!team) return undefined;
+      const members = dbInstance.teamMembers.filter((m) => m.teamId === team.id);
+      return {
+        ...team,
+        members: members.length > 0 ? members : team.members || [],
+      };
     },
     insert(team: Team): Team {
-      dbInstance.teams.unshift(team);
+      // 1. Insert team record
+      const teamRecord = { ...team };
+      dbInstance.teams.unshift(teamRecord);
+
+      // 2. Insert member records as separate distinct records
+      if (Array.isArray(team.members)) {
+        team.members.forEach((m) => {
+          const exists = dbInstance.teamMembers.some((tm) => tm.id === m.id || (tm.teamId === team.id && tm.userId === m.userId));
+          if (!exists) {
+            dbInstance.teamMembers.push({
+              ...m,
+              teamId: team.id,
+            });
+          }
+        });
+      }
+
       saveDatabase(dbInstance);
       return team;
     },
@@ -130,6 +182,19 @@ export const db = {
       const idx = dbInstance.teams.findIndex((t) => t.id === id);
       if (idx === -1) return undefined;
       const current = dbInstance.teams[idx]!;
+
+      // If members are updated, also sync them into distinct teamMembers records
+      if (Array.isArray(updates.members)) {
+        updates.members.forEach((m) => {
+          const mIdx = dbInstance.teamMembers.findIndex((tm) => tm.id === m.id || (tm.teamId === id && tm.userId === m.userId));
+          if (mIdx !== -1) {
+            dbInstance.teamMembers[mIdx] = { ...dbInstance.teamMembers[mIdx], ...m, teamId: id as any };
+          } else {
+            dbInstance.teamMembers.push({ ...m, teamId: id as any });
+          }
+        });
+      }
+
       const updated: Team = {
         ...current,
         ...updates,
@@ -140,6 +205,35 @@ export const db = {
       dbInstance.teams[idx] = updated;
       saveDatabase(dbInstance);
       return updated;
+    },
+  },
+
+  // Team Members Collection (Each member is stored as a separate individual record)
+  teamMembers: {
+    getAll(): TeamMember[] {
+      return [...dbInstance.teamMembers];
+    },
+    getByTeamId(teamId: string): TeamMember[] {
+      return dbInstance.teamMembers.filter((m) => m.teamId === teamId);
+    },
+    getByUserId(userId: string): TeamMember[] {
+      return dbInstance.teamMembers.filter((m) => m.userId === userId);
+    },
+    insert(member: TeamMember): TeamMember {
+      const exists = dbInstance.teamMembers.some(
+        (m) => m.teamId === member.teamId && m.userId === member.userId
+      );
+      if (!exists) {
+        dbInstance.teamMembers.push(member);
+        saveDatabase(dbInstance);
+      }
+      return member;
+    },
+    delete(teamId: string, userId: string): void {
+      dbInstance.teamMembers = dbInstance.teamMembers.filter(
+        (m) => !(m.teamId === teamId && m.userId === userId)
+      );
+      saveDatabase(dbInstance);
     },
   },
 
@@ -164,7 +258,6 @@ export const db = {
         dbInstance.noteComments[noteId] = [];
       }
       dbInstance.noteComments[noteId].push(comment);
-      // Increment comment count
       const note = dbInstance.notes.find((n) => n.id === noteId);
       if (note) {
         note.commentCount = (note.commentCount || 0) + 1;

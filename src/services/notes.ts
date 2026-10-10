@@ -142,7 +142,7 @@ export const notesService = {
             avatarUrl: (data.profiles as any).avatar_url,
           } : {
             id: validAuthorId as UserId,
-            fullName: 'Alex Rivera',
+            fullName: 'Participant',
             avatarUrl: null,
           },
           commentCount: 0,
@@ -156,6 +156,12 @@ export const notesService = {
       console.warn('Supabase createNote error, synced to db:', err);
     }
 
+    let activeAuthorName = 'Participant';
+    try {
+      const stored = localStorage.getItem('hackhub_current_profile');
+      if (stored) activeAuthorName = JSON.parse(stored).fullName || 'Participant';
+    } catch {}
+
     const fallbackNote: Note = {
       id: ('note-' + Math.random().toString(36).substring(2, 9)) as NoteId,
       hackathonId: validHackathonId as HackathonId,
@@ -167,7 +173,7 @@ export const notesService = {
       isPinned: input.isPinned,
       author: {
         id: validAuthorId as UserId,
-        fullName: 'Alex Rivera',
+        fullName: activeAuthorName,
         avatarUrl: null,
       },
       commentCount: 0,

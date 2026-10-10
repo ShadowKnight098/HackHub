@@ -7,24 +7,91 @@ import {
   X,
   Upload,
   MapPin,
-  Users,
   ChevronLeft,
   ChevronRight,
   CheckCircle2,
   RefreshCw,
   VideoOff,
   Sparkles,
+  Users,
 } from 'lucide-react';
 import {
   Modal,
   ModalContent,
   ModalBody,
   ModalHeader,
-  Avatar,
 } from '@heroui/react';
 import { db, SharedPhoto } from '@/lib/db';
 import { useAuth } from '@/features/auth';
 import { useTeams } from '@/features/teams';
+
+const DEFAULT_SAMPLE_PHOTOS: SharedPhoto[] = [
+  {
+    id: 'sample-1',
+    url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1000&auto=format&fit=crop&q=80',
+    title: 'Collaborative Canvas UI Alpha',
+    caption: 'Realtime WebSocket perception synced across tables',
+    teamName: 'NeuralCraft',
+    tableNumber: 'Table A-12',
+    uploadedBy: { name: 'Kavya Sharma' },
+    tags: ['Live', 'Frontend'],
+    likes: 14,
+    likedByMe: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'sample-2',
+    url: 'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=1000&auto=format&fit=crop&q=80',
+    title: 'Autonomous Rover Hardware Rig',
+    caption: 'LiDAR point-cloud visualization test',
+    teamName: 'VisionForge',
+    tableNumber: 'Table C-08',
+    uploadedBy: { name: 'Rohan Verma' },
+    tags: ['Robotics', 'Hardware'],
+    likes: 22,
+    likedByMe: false,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'sample-3',
+    url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1000&auto=format&fit=crop&q=80',
+    title: 'High-Throughput Telemetry Pipeline',
+    caption: 'Sub-millisecond distributed message queue benchmark',
+    teamName: 'QuantumPulse',
+    tableNumber: 'Table B-04',
+    uploadedBy: { name: 'Arjun Das' },
+    tags: ['Distributed', 'Backend'],
+    likes: 19,
+    likedByMe: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'sample-4',
+    url: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1000&auto=format&fit=crop&q=80',
+    title: 'Zero-Trust Boundary Sentinel',
+    caption: 'Encrypted mesh node topology live test',
+    teamName: 'CyberShield',
+    tableNumber: 'Table D-15',
+    uploadedBy: { name: 'Sneha Rao' },
+    tags: ['Security', 'Cryptography'],
+    likes: 17,
+    likedByMe: false,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'sample-5',
+    url: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1000&auto=format&fit=crop&q=80',
+    title: 'Wearable Acoustic Biometrics',
+    caption: 'DSP noise-cancellation hardware prototype',
+    teamName: 'BioEcho',
+    tableNumber: 'Table E-02',
+    uploadedBy: { name: 'Devika Nair' },
+    tags: ['Biometrics', 'Edge AI'],
+    likes: 25,
+    likedByMe: true,
+    createdAt: new Date().toISOString(),
+  },
+];
 
 export const SharedPhotoGallery: React.FC = () => {
   const { profile } = useAuth();
@@ -33,8 +100,8 @@ export const SharedPhotoGallery: React.FC = () => {
   const [selectedPhoto, setSelectedPhoto] = useState<SharedPhoto | null>(null);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
 
-  // Horizontal scroll container ref
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  // 3D Perspective Carousel active index state
+  const [activeIndex, setActiveIndex] = useState(0);
 
   // Upload & Camera state
   const [captureMode, setCaptureMode] = useState<'camera' | 'upload'>('camera');
@@ -61,20 +128,27 @@ export const SharedPhotoGallery: React.FC = () => {
     ? `Table ${myTeam.tableNumber}`
     : cachedLoc?.name || 'Main Venue Floor';
 
-  const loadPhotos = () => {
-    setPhotos(db.photos.getAll());
-  };
+  const loadPhotos = useCallback(() => {
+    const stored = db.photos.getAll();
+    if (stored.length === 0) {
+      setPhotos(DEFAULT_SAMPLE_PHOTOS);
+    } else {
+      // Merge user photos on top of sample photos if less than 5
+      const combined = stored.concat(
+        DEFAULT_SAMPLE_PHOTOS.filter((d) => !stored.some((s) => s.id === d.id))
+      );
+      setPhotos(combined);
+    }
+  }, []);
 
   useEffect(() => {
     loadPhotos();
-  }, []);
+  }, [loadPhotos]);
 
   // Stop camera helper
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => {
-        track.stop();
-      });
+      streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
     if (videoRef.current) {
@@ -106,7 +180,6 @@ export const SharedPhotoGallery: React.FC = () => {
           audio: false,
         });
       } catch {
-        // Fallback to generic video constraint
         stream = await navigator.mediaDevices.getUserMedia({
           video: true,
           audio: false,
@@ -127,7 +200,6 @@ export const SharedPhotoGallery: React.FC = () => {
     }
   }, [stopCamera]);
 
-  // Handle opening upload modal
   const openModal = (mode: 'camera' | 'upload' = 'camera') => {
     setCaptureMode(mode);
     setNewUrl('');
@@ -149,13 +221,11 @@ export const SharedPhotoGallery: React.FC = () => {
     setCameraError(null);
   };
 
-  // Flip front/back camera
   const toggleCameraFacing = () => {
     const next = cameraFacing === 'environment' ? 'user' : 'environment';
     startCamera(next);
   };
 
-  // Snap photo from live video feed
   const snapPhoto = () => {
     if (!videoRef.current || !canvasRef.current) return;
 
@@ -171,11 +241,9 @@ export const SharedPhotoGallery: React.FC = () => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Flash animation effect
     setIsFlashing(true);
     setTimeout(() => setIsFlashing(false), 200);
 
-    // If using front camera, mirror image for natural selfie feel
     if (cameraFacing === 'user') {
       ctx.translate(width, 0);
       ctx.scale(-1, 1);
@@ -185,8 +253,6 @@ export const SharedPhotoGallery: React.FC = () => {
 
     const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
     setNewUrl(dataUrl);
-
-    // Stop camera feed once picture is taken
     stopCamera();
   };
 
@@ -195,7 +261,6 @@ export const SharedPhotoGallery: React.FC = () => {
     startCamera(cameraFacing);
   };
 
-  // Clean up camera on unmount
   useEffect(() => {
     return () => {
       stopCamera();
@@ -214,13 +279,21 @@ export const SharedPhotoGallery: React.FC = () => {
       if (selectedPhoto && selectedPhoto.id === id) {
         setSelectedPhoto({ ...selectedPhoto, likes: updated.likes, likedByMe: updated.likedByMe });
       }
-    }
-  };
-
-  const scroll = (direction: 'left' | 'right') => {
-    if (scrollContainerRef.current) {
-      const scrollAmount = direction === 'left' ? -360 : 360;
-      scrollContainerRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    } else {
+      // Local toggle for sample photos
+      setPhotos((prev) =>
+        prev.map((p) => {
+          if (p.id === id) {
+            const liked = !p.likedByMe;
+            return {
+              ...p,
+              likedByMe: liked,
+              likes: liked ? p.likes + 1 : Math.max(0, p.likes - 1),
+            };
+          }
+          return p;
+        })
+      );
     }
   };
 
@@ -258,12 +331,36 @@ export const SharedPhotoGallery: React.FC = () => {
     };
 
     db.photos.insert(created);
-    loadPhotos();
+    setPhotos((prev) => [created, ...prev]);
+    setActiveIndex(0);
     closeModal();
   };
 
+  // Carousel navigation handlers
+  const totalPhotos = photos.length;
+  const handlePrev = useCallback(() => {
+    if (totalPhotos <= 1) return;
+    setActiveIndex((prev) => (prev - 1 + totalPhotos) % totalPhotos);
+  }, [totalPhotos]);
+
+  const handleNext = useCallback(() => {
+    if (totalPhotos <= 1) return;
+    setActiveIndex((prev) => (prev + 1) % totalPhotos);
+  }, [totalPhotos]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isUploadOpen || selectedPhoto) return;
+      if (e.key === 'ArrowLeft') handlePrev();
+      if (e.key === 'ArrowRight') handleNext();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handlePrev, handleNext, isUploadOpen, selectedPhoto]);
+
   return (
-    <div className="commons-card p-5 sm:p-6 flex flex-col gap-4">
+    <div className="commons-card p-5 sm:p-7 flex flex-col gap-5 overflow-hidden">
       {/* Hidden offscreen canvas for frame capture */}
       <canvas ref={canvasRef} className="hidden" />
 
@@ -280,24 +377,6 @@ export const SharedPhotoGallery: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {/* Scroll Navigation Chevrons */}
-          <button
-            onClick={() => scroll('left')}
-            className="p-1.5 rounded-lg border border-[var(--line)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--ink)] hover:border-[var(--accent)] transition-all shadow-xs cursor-pointer"
-            title="Scroll left"
-            aria-label="Scroll left"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => scroll('right')}
-            className="p-1.5 rounded-lg border border-[var(--line)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--ink)] hover:border-[var(--accent)] transition-all shadow-xs cursor-pointer"
-            title="Scroll right"
-            aria-label="Scroll right"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-
           {/* Quick Direct Camera Button */}
           <button
             onClick={() => openModal('camera')}
@@ -321,88 +400,223 @@ export const SharedPhotoGallery: React.FC = () => {
         </div>
       </div>
 
-      {/* ── CLEAN HORIZONTALLY SCROLLABLE SNAPSHOT STREAM ───────── */}
-      <div
-        ref={scrollContainerRef}
-        className="flex gap-4 overflow-x-auto pb-2 pt-1 scroll-smooth snap-x snap-mandatory scrollbar-thin"
-        style={{ scrollbarGutter: 'stable' }}
-      >
-        {photos.map((photo) => (
-          <motion.div
-            key={photo.id}
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="w-[280px] sm:w-[320px] flex-shrink-0 snap-start group rounded-xl border border-[var(--line)] bg-[var(--surface)] overflow-hidden cursor-pointer hover:border-[var(--accent)] hover:shadow-soft transition-all flex flex-col justify-between"
-            onClick={() => setSelectedPhoto(photo)}
-          >
-            {/* Photo Image Box */}
-            <div className="relative aspect-[4/3] overflow-hidden bg-[var(--bg)]">
-              <img
-                src={photo.url}
-                alt={photo.teamName || 'Snapshot'}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src =
-                    'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=600';
+      {/* ── 3D PERSPECTIVE COVER FLOW CAROUSEL (EXACT REFERENCE MATCH) ── */}
+      <div className="relative w-full py-4 sm:py-6 overflow-hidden flex flex-col items-center select-none">
+        {/* Perspective Stage Container */}
+        <div className="relative w-full h-[360px] sm:h-[420px] md:h-[460px] flex items-center justify-center">
+          {photos.map((photo, index) => {
+            // Calculate circular offset relative to active card
+            let offset = index - activeIndex;
+            const half = Math.floor(totalPhotos / 2);
+            while (offset > half) offset -= totalPhotos;
+            while (offset < -half) offset += totalPhotos;
+
+            const isCenter = offset === 0;
+            const isNear = Math.abs(offset) <= 2;
+
+            if (!isNear) return null;
+
+            // Compute 3D perspective translations
+            let xPos = 0;
+            let scale = 1;
+            let zIndex = 20;
+            let opacity = 1;
+            let brightness = 1;
+
+            if (offset === 0) {
+              xPos = 0;
+              scale = 1.05;
+              zIndex = 30;
+              opacity = 1;
+              brightness = 1;
+            } else if (offset === -1) {
+              xPos = -190;
+              scale = 0.88;
+              zIndex = 20;
+              opacity = 0.88;
+              brightness = 0.85;
+            } else if (offset === 1) {
+              xPos = 190;
+              scale = 0.88;
+              zIndex = 20;
+              opacity = 0.88;
+              brightness = 0.85;
+            } else if (offset === -2) {
+              xPos = -320;
+              scale = 0.74;
+              zIndex = 10;
+              opacity = 0.45;
+              brightness = 0.7;
+            } else if (offset === 2) {
+              xPos = 320;
+              scale = 0.74;
+              zIndex = 10;
+              opacity = 0.45;
+              brightness = 0.7;
+            }
+
+            return (
+              <motion.div
+                key={photo.id}
+                animate={{
+                  x: xPos,
+                  scale,
+                  zIndex,
+                  opacity,
+                  filter: `brightness(${brightness})`,
                 }}
-              />
-
-              {/* Location Badge (Top-Left) */}
-              <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md bg-[var(--surface)]/90 backdrop-blur-md border border-[var(--line)] text-[10px] font-mono text-[var(--ink)] font-medium flex items-center gap-1 shadow-xs">
-                <MapPin className="w-3 h-3 text-[var(--accent)]" />
-                <span>{photo.tableNumber || 'Floor'}</span>
-              </div>
-
-              {/* Like Heart Button (Top-Right) */}
-              <button
-                onClick={(e) => handleToggleLike(photo.id, e)}
-                className={`absolute top-2.5 right-2.5 p-1.5 rounded-full backdrop-blur-md border transition-all cursor-pointer ${
-                  photo.likedByMe
-                    ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
-                    : 'bg-[var(--surface)]/90 text-[var(--muted)] border-[var(--line)] hover:text-[var(--accent)]'
+                transition={{
+                  type: 'spring',
+                  stiffness: 260,
+                  damping: 26,
+                }}
+                onClick={() => {
+                  if (isCenter) {
+                    setSelectedPhoto(photo);
+                  } else {
+                    setActiveIndex(index);
+                  }
+                }}
+                className={`absolute w-[240px] sm:w-[280px] md:w-[320px] aspect-[3/4] rounded-[28px] overflow-hidden cursor-pointer group shadow-2xl transition-shadow ${
+                  isCenter ? 'ring-2 ring-[var(--accent)]/30' : ''
                 }`}
-                title={photo.likedByMe ? 'Liked' : 'Like'}
+                style={{
+                  transformOrigin: 'center center',
+                }}
               >
-                <Heart className={`w-3.5 h-3.5 ${photo.likedByMe ? 'fill-current' : ''}`} />
-              </button>
-            </div>
-
-            {/* Simple Team Info & Author Footer */}
-            <div className="p-3.5 flex items-center justify-between gap-2 border-t border-[var(--line)] bg-[var(--surface)]">
-              <div className="min-w-0 flex items-center gap-2">
-                <Avatar
-                  size="sm"
-                  src={photo.uploadedBy.avatarUrl}
-                  name={photo.teamName?.[0] || 'T'}
-                  className="w-6 h-6 text-[10px] shrink-0 border border-[var(--line)] bg-[var(--bg)]"
+                {/* Background Image */}
+                <img
+                  src={photo.url}
+                  alt={photo.teamName || 'Snapshot'}
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src =
+                      'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800';
+                  }}
                 />
-                <div className="min-w-0">
-                  <p className="font-heading text-xs font-semibold text-[var(--ink)] truncate group-hover:text-[var(--accent)] transition-colors">
-                    {photo.teamName}
-                  </p>
-                  <p className="text-[10px] text-[var(--muted)] truncate">
-                    {photo.uploadedBy.name}
-                  </p>
-                </div>
-              </div>
 
-              <div className="flex items-center gap-2 shrink-0">
-                <div className="flex items-center gap-1 text-[11px] text-[var(--muted)]">
-                  <Heart className={`w-3 h-3 ${photo.likedByMe ? 'text-[var(--accent)] fill-current' : ''}`} />
-                  <span className="font-mono">{photo.likes}</span>
-                </div>
-                <Maximize2 className="w-3.5 h-3.5 text-[var(--muted)] group-hover:text-[var(--accent)] transition-colors" />
-              </div>
-            </div>
-          </motion.div>
-        ))}
+                {/* Subtle top shade */}
+                <div className="absolute top-0 inset-x-0 h-16 bg-gradient-to-b from-black/40 to-transparent pointer-events-none" />
 
-        {photos.length === 0 && (
-          <div className="w-full py-10 text-center text-xs text-[var(--muted)] flex flex-col items-center justify-center gap-2">
-            <Camera className="w-6 h-6 text-[var(--muted)]/50" />
-            <span>No team photos shared yet. Be the first to snap a photo!</span>
+                {/* Top Live Badge */}
+                <div className="absolute top-3.5 left-3.5 px-2.5 py-0.5 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-[10px] text-white font-medium flex items-center gap-1.5 shadow-sm">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>Cohort Live</span>
+                </div>
+
+                {/* ── FROSTED GLASS BLUR OVERLAY ON BOTTOM (MATCHING REQUEST) ── */}
+                <div className="absolute bottom-0 inset-x-0 p-3.5 sm:p-4.5 backdrop-blur-xl bg-black/50 dark:bg-black/70 border-t border-white/20 text-white rounded-b-[28px] flex flex-col gap-2">
+                  {/* Top Row: Team Name & Location Badge */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0 flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-[10px] font-bold text-white shrink-0 border border-white/20">
+                        {photo.teamName?.[0] || 'T'}
+                      </div>
+                      <h3 className="font-heading text-sm sm:text-base font-bold text-white truncate drop-shadow-sm">
+                        {photo.teamName}
+                      </h3>
+                    </div>
+
+                    {/* Location Info Pill */}
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/25 text-white text-[10px] sm:text-[11px] font-mono shrink-0 shadow-xs">
+                      <MapPin className="w-3 h-3 text-[var(--sun)]" />
+                      <span>{photo.tableNumber || 'Floor Area'}</span>
+                    </div>
+                  </div>
+
+                  {/* Bottom Row: Tagline / Caption & Likes */}
+                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-white/10 text-xs">
+                    <p className="text-white/85 text-[11px] sm:text-xs truncate max-w-[170px] sm:max-w-[200px]">
+                      {photo.title || `Snapshot by ${photo.uploadedBy.name}`}
+                    </p>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        onClick={(e) => handleToggleLike(photo.id, e)}
+                        className={`flex items-center gap-1 px-2 py-0.5 rounded-full backdrop-blur-md transition-all cursor-pointer ${
+                          photo.likedByMe
+                            ? 'bg-[var(--accent)] text-white'
+                            : 'bg-white/15 text-white/90 hover:bg-white/25'
+                        }`}
+                        title="Like snapshot"
+                      >
+                        <Heart className={`w-3 h-3 ${photo.likedByMe ? 'fill-current text-white' : ''}`} />
+                        <span className="font-mono text-[10px] sm:text-[11px]">{photo.likes}</span>
+                      </button>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedPhoto(photo);
+                        }}
+                        className="p-1 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all cursor-pointer"
+                        title="Expand view"
+                      >
+                        <Maximize2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* ── CAROUSEL BOTTOM CONTROLS (CIRCULAR ARROWS MATCHING IMAGE) ── */}
+        <div className="w-full flex items-center justify-between mt-5 px-3 max-w-xl">
+          {/* Left Slide Count */}
+          <div className="text-xs text-[var(--muted)] font-mono hidden sm:block">
+            {totalPhotos > 0 ? `${activeIndex + 1} / ${totalPhotos}` : '0 / 0'}
           </div>
-        )}
+
+          {/* Centered Minimalist Circular Arrow Controls */}
+          <div className="flex items-center gap-3 mx-auto">
+            <button
+              onClick={handlePrev}
+              className="w-10 h-10 rounded-full border border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] hover:border-[var(--accent)] hover:text-[var(--accent)] flex items-center justify-center transition-all shadow-sm active:scale-95 cursor-pointer group"
+              title="Previous photo (←)"
+              aria-label="Previous photo"
+            >
+              <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
+            </button>
+
+            {/* Slide Navigation Dots */}
+            <div className="flex items-center gap-1.5 px-2">
+              {photos.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setActiveIndex(i)}
+                  className={`transition-all rounded-full cursor-pointer ${
+                    i === activeIndex
+                      ? 'w-5 h-2 bg-[var(--accent)]'
+                      : 'w-2 h-2 bg-[var(--line)] hover:bg-[var(--muted)]'
+                  }`}
+                  aria-label={`Go to slide ${i + 1}`}
+                />
+              ))}
+            </div>
+
+            <button
+              onClick={handleNext}
+              className="w-10 h-10 rounded-full border border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] hover:border-[var(--accent)] hover:text-[var(--accent)] flex items-center justify-center transition-all shadow-sm active:scale-95 cursor-pointer group"
+              title="Next photo (→)"
+              aria-label="Next photo"
+            >
+              <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+            </button>
+          </div>
+
+          {/* Right Expand / Fullscreen Button */}
+          <button
+            onClick={() => {
+              if (photos[activeIndex]) setSelectedPhoto(photos[activeIndex]);
+            }}
+            className="p-2.5 rounded-full border border-[var(--line)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--ink)] hover:border-[var(--accent)] transition-all shadow-sm cursor-pointer"
+            title="Open lightbox view"
+          >
+            <Maximize2 className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* ── LIGHTBOX ZOOM MODAL ─────────────────────────────────── */}
@@ -415,7 +629,7 @@ export const SharedPhotoGallery: React.FC = () => {
             backdrop="blur"
             placement="center"
             classNames={{
-              base: 'border border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] shadow-2xl rounded-xl overflow-hidden',
+              base: 'border border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] shadow-2xl rounded-2xl overflow-hidden',
               header: 'border-b border-[var(--line)] px-5 py-3.5 flex items-center justify-between',
               body: 'p-0',
               footer: 'border-t border-[var(--line)] px-5 py-3.5 bg-[var(--bg)]',
@@ -424,11 +638,13 @@ export const SharedPhotoGallery: React.FC = () => {
             <ModalContent>
               <ModalHeader>
                 <div className="flex items-center gap-2.5">
-                  <Users className="w-4 h-4 text-[var(--moss)]" />
+                  <div className="w-6 h-6 rounded-full bg-[var(--accent)] text-white text-[10px] font-bold flex items-center justify-center">
+                    {selectedPhoto.teamName?.[0] || 'T'}
+                  </div>
                   <h3 className="font-heading text-base text-[var(--ink)]">
                     {selectedPhoto.teamName}
                   </h3>
-                  <span className="text-[11px] font-mono text-[var(--muted)] flex items-center gap-1">
+                  <span className="text-[11px] font-mono text-[var(--muted)] flex items-center gap-1 ml-1">
                     <MapPin className="w-3 h-3 text-[var(--accent)]" />
                     {selectedPhoto.tableNumber}
                   </span>
@@ -445,15 +661,12 @@ export const SharedPhotoGallery: React.FC = () => {
                 </div>
 
                 <div className="p-4 flex items-center justify-between text-xs border-t border-[var(--line)] bg-[var(--surface)]">
-                  <div className="flex items-center gap-2">
-                    <Avatar
-                      size="sm"
-                      src={selectedPhoto.uploadedBy.avatarUrl}
-                      name={selectedPhoto.uploadedBy.name[0]}
-                      className="w-6 h-6 text-[10px]"
-                    />
-                    <span className="text-[var(--ink)] font-medium">
-                      Posted by {selectedPhoto.uploadedBy.name}
+                  <div>
+                    <span className="text-[var(--ink)] font-semibold block">
+                      {selectedPhoto.title}
+                    </span>
+                    <span className="text-[11px] text-[var(--muted)]">
+                      Captured by {selectedPhoto.uploadedBy.name}
                     </span>
                   </div>
 
@@ -545,19 +758,18 @@ export const SharedPhotoGallery: React.FC = () => {
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs text-[var(--muted)]">Tagging:</span>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs bg-[color-mix(in_srgb,var(--accent)_12%,var(--surface))] border border-[var(--accent)] text-[var(--ink)] font-semibold shadow-xs">
-                <Users className="w-3 h-3 text-[var(--moss)]" />
+                <Users className="w-3.5 h-3.5 text-[var(--moss)]" />
                 <span>{autoTeam}</span>
-                <CheckCircle2 className="w-3 h-3 text-emerald-600 ml-0.5" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 ml-0.5" />
               </div>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs bg-[var(--surface)] border border-[var(--line)] text-[var(--ink)] font-medium">
-                <MapPin className="w-3 h-3 text-[var(--accent)]" />
+                <MapPin className="w-3.5 h-3.5 text-[var(--accent)]" />
                 <span>{autoLocation}</span>
               </div>
             </div>
 
             {/* ── PHOTO CAPTURE / PREVIEW AREA ───────────────────── */}
             {newUrl ? (
-              /* Snapped / Selected Photo Preview */
               <div className="relative aspect-video rounded-2xl overflow-hidden border border-[var(--line)] bg-black/90 shadow-inner group">
                 <img src={newUrl} alt="Preview" className="w-full h-full object-contain" />
                 <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-auto">
@@ -575,14 +787,11 @@ export const SharedPhotoGallery: React.FC = () => {
                 </div>
               </div>
             ) : captureMode === 'camera' ? (
-              /* LIVE CAMERA VIEWFINDER */
               <div className="relative aspect-video rounded-2xl overflow-hidden border-2 border-[var(--line)] bg-zinc-950 flex flex-col justify-between p-3.5 shadow-inner">
-                {/* Flash overlay */}
                 {isFlashing && (
                   <div className="absolute inset-0 bg-white z-30 transition-opacity duration-150 pointer-events-none" />
                 )}
 
-                {/* Video Feed */}
                 <video
                   ref={videoRef}
                   autoPlay
@@ -593,7 +802,6 @@ export const SharedPhotoGallery: React.FC = () => {
                   }`}
                 />
 
-                {/* Top Viewfinder Controls */}
                 <div className="relative z-10 flex items-center justify-between w-full">
                   <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[11px] text-white font-medium">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -610,10 +818,8 @@ export const SharedPhotoGallery: React.FC = () => {
                   </button>
                 </div>
 
-                {/* Framing guides (subtle corner crosshairs) */}
                 <div className="absolute inset-8 pointer-events-none border border-white/20 rounded-xl" />
 
-                {/* Bottom Shutter Controls */}
                 <div className="relative z-10 flex items-center justify-center w-full">
                   <button
                     type="button"
@@ -627,7 +833,6 @@ export const SharedPhotoGallery: React.FC = () => {
                   </button>
                 </div>
 
-                {/* Camera error message inside viewfinder */}
                 {cameraError && (
                   <div className="absolute inset-0 z-20 bg-zinc-950/90 flex flex-col items-center justify-center p-6 text-center text-white">
                     <VideoOff className="w-8 h-8 text-[var(--accent)] mb-2" />
@@ -643,7 +848,6 @@ export const SharedPhotoGallery: React.FC = () => {
                 )}
               </div>
             ) : (
-              /* FILE UPLOAD DROPZONE */
               <div>
                 <button
                   type="button"
@@ -664,7 +868,6 @@ export const SharedPhotoGallery: React.FC = () => {
               </div>
             )}
 
-            {/* Tagline / Caption Input */}
             <div>
               <label className="text-xs font-semibold text-[var(--ink)] mb-1.5 block">
                 Caption / project note:
@@ -678,7 +881,6 @@ export const SharedPhotoGallery: React.FC = () => {
               />
             </div>
 
-            {/* Bottom Actions */}
             <div className="flex items-center justify-end gap-3 pt-1 border-t border-[var(--line)]">
               <button
                 type="button"
