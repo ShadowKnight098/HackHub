@@ -26,74 +26,6 @@ import { useAuth } from '@/features/auth';
 import { useTeams } from '@/features/teams';
 import { storageService } from '@/services/storage';
 
-const DEFAULT_SAMPLE_PHOTOS: SharedPhoto[] = [
-  {
-    id: 'sample-1',
-    url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1000&auto=format&fit=crop&q=80',
-    title: 'Collaborative Canvas UI Alpha',
-    caption: 'Realtime WebSocket perception synced across tables',
-    teamName: 'NeuralCraft',
-    tableNumber: 'Table A-12',
-    uploadedBy: { name: 'Kavya Sharma' },
-    tags: ['Live', 'Frontend'],
-    likes: 14,
-    likedByMe: true,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'sample-2',
-    url: 'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=1000&auto=format&fit=crop&q=80',
-    title: 'Autonomous Rover Hardware Rig',
-    caption: 'LiDAR point-cloud visualization test',
-    teamName: 'VisionForge',
-    tableNumber: 'Table C-08',
-    uploadedBy: { name: 'Rohan Verma' },
-    tags: ['Robotics', 'Hardware'],
-    likes: 22,
-    likedByMe: false,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'sample-3',
-    url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1000&auto=format&fit=crop&q=80',
-    title: 'High-Throughput Telemetry Pipeline',
-    caption: 'Sub-millisecond distributed message queue benchmark',
-    teamName: 'QuantumPulse',
-    tableNumber: 'Table B-04',
-    uploadedBy: { name: 'Arjun Das' },
-    tags: ['Distributed', 'Backend'],
-    likes: 19,
-    likedByMe: true,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'sample-4',
-    url: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1000&auto=format&fit=crop&q=80',
-    title: 'Zero-Trust Boundary Sentinel',
-    caption: 'Encrypted mesh node topology live test',
-    teamName: 'CyberShield',
-    tableNumber: 'Table D-15',
-    uploadedBy: { name: 'Sneha Rao' },
-    tags: ['Security', 'Cryptography'],
-    likes: 17,
-    likedByMe: false,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'sample-5',
-    url: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1000&auto=format&fit=crop&q=80',
-    title: 'Wearable Acoustic Biometrics',
-    caption: 'DSP noise-cancellation hardware prototype',
-    teamName: 'BioEcho',
-    tableNumber: 'Table E-02',
-    uploadedBy: { name: 'Devika Nair' },
-    tags: ['Biometrics', 'Edge AI'],
-    likes: 25,
-    likedByMe: true,
-    createdAt: new Date().toISOString(),
-  },
-];
-
 export const SharedPhotoGallery: React.FC = () => {
   const { profile } = useAuth();
   const { teams } = useTeams();
@@ -130,16 +62,9 @@ export const SharedPhotoGallery: React.FC = () => {
     : cachedLoc?.name || 'Main Venue Floor';
 
   const loadPhotos = useCallback(() => {
+    // Only load dynamic user snapshots
     const stored = db.photos.getAll();
-    if (stored.length === 0) {
-      setPhotos(DEFAULT_SAMPLE_PHOTOS);
-    } else {
-      // Merge user photos on top of sample photos if less than 5
-      const combined = stored.concat(
-        DEFAULT_SAMPLE_PHOTOS.filter((d) => !stored.some((s) => s.id === d.id))
-      );
-      setPhotos(combined);
-    }
+    setPhotos(stored);
   }, []);
 
   useEffect(() => {
@@ -415,8 +340,38 @@ export const SharedPhotoGallery: React.FC = () => {
 
       {/* ── 3D PERSPECTIVE COVER FLOW CAROUSEL (EXACT REFERENCE MATCH) ── */}
       <div className="relative w-full py-4 sm:py-6 overflow-hidden flex flex-col items-center select-none">
-        {/* Perspective Stage Container */}
-        <div className="relative w-full h-[360px] sm:h-[420px] md:h-[460px] flex items-center justify-center">
+        {totalPhotos === 0 ? (
+          <div className="w-full py-16 px-4 flex flex-col items-center justify-center text-center rounded-[24px] border border-dashed border-[var(--line)] bg-[var(--surface)]/40">
+            <div className="w-14 h-14 rounded-2xl bg-[var(--bg)] border border-[var(--line)] flex items-center justify-center mb-3 shadow-inner">
+              <Camera className="w-7 h-7 text-[var(--accent)]" />
+            </div>
+            <h3 className="font-heading text-base font-bold text-[var(--ink)] mb-1">
+              No team snapshots posted yet
+            </h3>
+            <p className="text-xs text-[var(--muted)] max-w-sm mb-4 leading-relaxed">
+              Snap your prototype, workbench rig, or team huddle to start the live cohort stream!
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => openModal('camera')}
+                className="commons-btn-primary py-2 px-4 text-xs flex items-center gap-1.5 cursor-pointer"
+              >
+                <Camera className="w-3.5 h-3.5" />
+                <span>Snap First Photo</span>
+              </button>
+              <button
+                onClick={() => openModal('upload')}
+                className="commons-btn-secondary py-2 px-3 text-xs flex items-center gap-1 cursor-pointer"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                <span>Upload Image</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Perspective Stage Container */}
+            <div className="relative w-full h-[360px] sm:h-[420px] md:h-[460px] flex items-center justify-center">
           {photos.map((photo, index) => {
             // Calculate circular offset relative to active card
             let offset = index - activeIndex;
@@ -630,7 +585,9 @@ export const SharedPhotoGallery: React.FC = () => {
             <Maximize2 className="w-4 h-4" />
           </button>
         </div>
-      </div>
+      </>
+    )}
+  </div>
 
       {/* ── LIGHTBOX ZOOM MODAL ─────────────────────────────────── */}
       <AnimatePresence>
