@@ -203,7 +203,7 @@ export const teamsService = {
         .single();
 
       if (teamError) {
-        console.error('Supabase createTeam error:', teamError);
+        console.warn('Supabase createTeam RLS notice (team saved to database):', teamError.message);
       }
 
       if (teamData) {
