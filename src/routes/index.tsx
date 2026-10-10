@@ -3,6 +3,8 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { Spinner } from '@heroui/react';
 import { AppLayout } from '@/components/ui/AppLayout';
 
+import { useAuth } from '@/features/auth';
+
 // Lazy loaded page components
 const Dashboard = lazy(() => import('@/features/dashboard').then((m) => ({ default: m.Dashboard })));
 const LoginForm = lazy(() => import('@/features/auth').then((m) => ({ default: m.LoginForm })));
@@ -23,11 +25,61 @@ const PageLoader = () => (
   </div>
 );
 
+// Protected layout: requires logged-in user, renders Navbar & Sidebar.
+// If not authenticated, redirects directly to /login with NO navbar.
+const ProtectedLayout: React.FC = () => {
+  const { profile, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <PageLoader />;
+  }
+
+  if (!profile) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <AppLayout />;
+};
+
+// Public route: for login/register without navbar/sidebar.
+const PublicRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
+  const { profile, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <PageLoader />;
+  }
+
+  if (profile) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+};
+
 export const AppRoutes: React.FC = () => {
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
-        <Route element={<AppLayout />}>
+        {/* Public auth routes with NO navbar or sidebar */}
+        <Route
+          path="/login"
+          element={
+            <PublicRoute>
+              <LoginForm />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <PublicRoute>
+              <RegisterForm />
+            </PublicRoute>
+          }
+        />
+
+        {/* Protected routes - requires login, renders AppLayout */}
+        <Route element={<ProtectedLayout />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/teams" element={<TeamList />} />
           <Route path="/teams/:id" element={<TeamDetail />} />
@@ -38,10 +90,9 @@ export const AppRoutes: React.FC = () => {
           <Route path="/announcements" element={<AnnouncementList />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/profile" element={<UserProfile />} />
-          <Route path="/login" element={<LoginForm />} />
-          <Route path="/register" element={<RegisterForm />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
+
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
   );

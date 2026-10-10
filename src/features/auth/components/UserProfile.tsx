@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Avatar } from '@heroui/react';
-import { Mail, Save, Check, ChevronDown } from 'lucide-react';
+import { Mail, Save, Check, ChevronDown, LogOut } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { UserRole } from '@/types/enums';
+import { useNavigate } from 'react-router-dom';
 
 const fadeUp = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.25, ease: 'easeOut' } } };
 
 export const UserProfile: React.FC = () => {
-  const { profile } = useAuth();
+  const { profile, signOut } = useAuth();
+  const navigate = useNavigate();
   const [role, setRole] = useState<UserRole>(profile?.role || UserRole.STUDENT);
   const [bio, setBio] = useState(profile?.bio || '');
   const [skillsInput, setSkillsInput] = useState(profile?.skills?.join(', ') || '');
@@ -22,6 +24,11 @@ export const UserProfile: React.FC = () => {
     localStorage.setItem('hackhub_mock_profile', JSON.stringify(updated));
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/login');
   };
 
   if (!profile) return null;
@@ -130,6 +137,22 @@ export const UserProfile: React.FC = () => {
             </button>
           </div>
         </form>
+      </div>
+
+      {/* Session Management Zone */}
+      <div className="commons-card p-6 bg-[var(--surface)] border border-[var(--line)] flex items-center justify-between">
+        <div>
+          <h3 className="font-heading text-sm text-[var(--ink)]">Active Participant Session</h3>
+          <p className="text-xs text-[var(--muted)] mt-0.5">End your current session on this device and return to check-in.</p>
+        </div>
+        <button
+          type="button"
+          onClick={handleSignOut}
+          className="commons-btn-secondary text-xs text-[var(--accent)] border-[var(--accent)]/30 hover:bg-[color-mix(in_srgb,var(--accent)_10%,transparent)] py-2 px-4 flex items-center gap-2 cursor-pointer"
+        >
+          <LogOut className="w-4 h-4" />
+          <span>Sign Out</span>
+        </button>
       </div>
     </motion.div>
   );

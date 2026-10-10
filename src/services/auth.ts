@@ -53,25 +53,11 @@ export const authService = {
       try {
         return JSON.parse(stored) as Profile;
       } catch {
-        // Continue to default
+        localStorage.removeItem('hackhub_current_profile');
       }
     }
 
-    // Default attendee profile mapped directly to verified Supabase user
-    const defaultProfile: Profile = {
-      id: '80bb5377-7cf9-49e2-b8d7-254193c7a16c' as UserId,
-      email: 'hacker@hackhub.dev',
-      fullName: 'Alex Rivera',
-      avatarUrl: null,
-      bio: 'Full-stack builder focusing on distributed perception & AI systems.',
-      skills: ['TypeScript', 'React', 'Python', 'Supabase'],
-      role: UserRole.STUDENT,
-      departmentId: null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    localStorage.setItem('hackhub_current_profile', JSON.stringify(defaultProfile));
-    return defaultProfile;
+    return null;
   },
 
   async signIn(credentials: SignInCredentials): Promise<Profile> {
@@ -215,6 +201,8 @@ export const authService = {
     } catch {}
     localStorage.removeItem('hackhub_current_profile');
     localStorage.removeItem('hackhub_mock_profile');
+    localStorage.removeItem('hackhub_cached_location');
+    sessionStorage.clear();
   },
 
   onAuthStateChange(callback: (profile: Profile | null) => void) {
