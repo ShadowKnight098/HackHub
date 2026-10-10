@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { db } from '@/lib/db';
 import type { Profile, SignInCredentials, SignUpCredentials } from '@/types/schemas/auth';
 import type { UserId } from '@/types/ids';
 import { UserRole } from '@/types/enums';
@@ -62,97 +63,87 @@ export const authService = {
 
   async signIn(credentials: SignInCredentials): Promise<Profile> {
     const email = credentials.email.trim().toLowerCase();
-    const password = credentials.password || 'HackHub@2026';
-    const fullName = credentials.fullName?.trim() || email.split('@')[0] || 'Attendee';
-    const rollNo = credentials.rollNumber?.trim();
-    const bioText = rollNo ? `Roll No: ${rollNo}` : '';
+    const password = credentials.password || '';
 
+    // 1. First verify against Supabase Auth
     try {
-      // 1. Attempt regular sign in with password
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (!error && data?.user) {
-        // Update profile with name and roll number if provided
-        if (fullName || bioText) {
-          await supabase.from('profiles').update({
-            full_name: fullName,
-            bio: bioText,
-          }).eq('id', data.user.id);
-        }
-
         const liveProfile = await this.getCurrentProfile();
         if (liveProfile) {
-          if (fullName) liveProfile.fullName = fullName;
-          if (bioText) liveProfile.bio = bioText;
           localStorage.setItem('hackhub_current_profile', JSON.stringify(liveProfile));
           return liveProfile;
         }
-      } else {
-        try {
-          const { data: newUser, error: signUpErr } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-              data: { full_name: fullName, roll_number: rollNo, role: 'student' },
-            },
-          });
-          if (signUpErr) {
-            console.warn('Supabase signIn auto-provision notice:', signUpErr.message);
-          }
-          if (newUser?.user) {
-            const userId = newUser.user.id;
-            try {
-              await supabase.from('profiles').upsert({
-                id: userId,
-                email,
-                full_name: fullName,
-                bio: bioText,
-                role: 'student',
-              });
-            } catch {}
-          }
-        } catch (autoProvisionErr) {
-          console.warn('Supabase autoProvision exception:', autoProvisionErr);
-        }
+      }
+    } catch (err) {
+      console.warn('Supabase auth check notice:', err);
+    }
 
+    // 2. Check registered accounts in database
+    const registered = db.registeredProfiles.getByEmail(email);
+    if (registered) {
+      if (registered.password && registered.password !== password) {
+        throw new Error('Incorrect password. Please enter the password you registered with.');
+      }
+
+      const verifiedProfile: Profile = {
+        id: registered.id as UserId,
+        email: registered.email,
+        fullName: registered.fullName,
+        avatarUrl: null,
+        bio: registered.rollNumber ? `Roll No: ${registered.rollNumber}` : '',
+        skills: [],
+        role: (registered.role as UserRole) || UserRole.STUDENT,
+        departmentId: null,
+        createdAt: registered.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      localStorage.setItem('hackhub_current_profile', JSON.stringify(verifiedProfile));
+      return verifiedProfile;
+    }
+
+    // 3. Check public.profiles in Supabase database
+    try {
+      const { data: dbProfile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (dbProfile) {
         const profile: Profile = {
-          id: (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : '80bb5377-7cf9-49e2-b8d7-254193c7a16c') as UserId,
-          email,
-          fullName,
-          avatarUrl: null,
-          bio: bioText,
-          skills: [],
-          role: UserRole.STUDENT,
-          departmentId: null,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          id: dbProfile.id as UserId,
+          email: dbProfile.email,
+          fullName: dbProfile.full_name,
+          avatarUrl: dbProfile.avatar_url,
+          bio: dbProfile.bio,
+          skills: dbProfile.skills || [],
+          role: dbProfile.role as UserRole,
+          departmentId: dbProfile.department_id,
+          createdAt: dbProfile.created_at,
+          updatedAt: dbProfile.updated_at,
         };
+
+        db.registeredProfiles.insert({
+          id: profile.id,
+          email: profile.email,
+          password,
+          fullName: profile.fullName,
+          role: profile.role,
+        });
 
         localStorage.setItem('hackhub_current_profile', JSON.stringify(profile));
         return profile;
       }
-    } catch (err) {
-      console.warn('Supabase signIn attempt warning, using local profile fallback:', err);
-    }
+    } catch {}
 
-    // Dynamic fallback with valid UUID
-    const fallbackProfile: Profile = {
-      id: (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : '80bb5377-7cf9-49e2-b8d7-254193c7a16c') as UserId,
-      email,
-      fullName,
-      avatarUrl: null,
-      bio: bioText,
-      skills: [],
-      role: UserRole.STUDENT,
-      departmentId: null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    localStorage.setItem('hackhub_current_profile', JSON.stringify(fallbackProfile));
-    return fallbackProfile;
+    // Account does not exist in any database
+    throw new Error('No registered participant found with this email. Please register first.');
   },
 
   async signUp(credentials: SignUpCredentials): Promise<Profile> {
@@ -161,6 +152,7 @@ export const authService = {
     const bioText = rollNo ? `Roll No: ${rollNo}` : '';
     const email = credentials.email.trim().toLowerCase();
     const role = credentials.role || UserRole.STUDENT;
+    const password = credentials.password?.trim() || '';
 
     const newProfile: Profile = {
       id: (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : ('usr-' + Math.random().toString(36).substring(2, 9))) as UserId,
@@ -175,10 +167,20 @@ export const authService = {
       updatedAt: new Date().toISOString(),
     };
 
+    // Save account securely into database registeredProfiles
+    db.registeredProfiles.insert({
+      id: newProfile.id,
+      email,
+      password,
+      fullName: name,
+      rollNumber: rollNo,
+      role,
+    });
+
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
-        password: credentials.password,
+        password,
         options: {
           data: {
             full_name: name,
@@ -189,7 +191,7 @@ export const authService = {
       });
 
       if (error) {
-        console.warn('Supabase signUp API notice (proceeding with verified profile):', error.message);
+        console.warn('Supabase signUp API notice:', error.message);
       }
 
       if (data?.user) {

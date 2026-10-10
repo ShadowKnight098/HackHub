@@ -41,6 +41,15 @@ interface DatabaseSchema {
   messages: Record<string, Message[]>;
   announcements: Announcement[];
   photos: SharedPhoto[];
+  registeredProfiles?: Array<{
+    id: string;
+    email: string;
+    password?: string;
+    fullName: string;
+    rollNumber?: string;
+    role: string;
+    createdAt: string;
+  }>;
 }
 
 // Clean, live database with zero hardcoded mock records
@@ -335,6 +344,37 @@ export const db = {
       dbInstance.photos = dbInstance.photos.filter((p) => p.id !== id);
       saveDatabase(dbInstance);
       return dbInstance.photos.length < prev;
+    },
+  },
+
+  // Registered Accounts & Profiles
+  registeredProfiles: {
+    getAll() {
+      return [...(dbInstance.registeredProfiles || [])];
+    },
+    getByEmail(email: string) {
+      const normalized = email.trim().toLowerCase();
+      return (dbInstance.registeredProfiles || []).find((p) => p.email.toLowerCase() === normalized);
+    },
+    insert(profile: { id: string; email: string; password?: string; fullName: string; rollNumber?: string; role: string }) {
+      if (!dbInstance.registeredProfiles) dbInstance.registeredProfiles = [];
+      const normalized = profile.email.trim().toLowerCase();
+      const existingIdx = dbInstance.registeredProfiles.findIndex((p) => p.email.toLowerCase() === normalized);
+      const record = {
+        ...profile,
+        email: normalized,
+        createdAt: new Date().toISOString(),
+      };
+      if (existingIdx !== -1) {
+        dbInstance.registeredProfiles[existingIdx] = {
+          ...dbInstance.registeredProfiles[existingIdx],
+          ...record,
+        };
+      } else {
+        dbInstance.registeredProfiles.push(record);
+      }
+      saveDatabase(dbInstance);
+      return record;
     },
   },
 
