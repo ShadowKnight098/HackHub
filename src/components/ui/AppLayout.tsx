@@ -59,7 +59,7 @@ export const AppLayout: React.FC = () => {
         </header>
 
         {/* Page body */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto transition-colors duration-700 ease-in-out">
           <div className="max-w-6xl mx-auto px-4 sm:px-8 pt-6 pb-28 md:pb-6">
             <Outlet />
           </div>

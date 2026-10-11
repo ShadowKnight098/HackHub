@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -33,6 +33,61 @@ export const Dashboard: React.FC = () => {
   const { resources } = useResources();
   const { notes } = useNotes();
 
+  // Mixed background scroll state:
+  // 'top' = pure white (#FFFFFF) for the hero length
+  // 'gallery' = converts to deep obsidian black (#0B0C10) with beautiful animation
+  // 'bottom' = converts back to normal (#F0F0F0) for cards and notes
+  const [scrollZone, setScrollZone] = useState<'top' | 'gallery' | 'bottom'>('top');
+  const galleryRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const mainEl = document.querySelector('main');
+    if (!mainEl) return;
+
+    const handleScroll = () => {
+      if (!galleryRef.current) return;
+      const galleryRect = galleryRef.current.getBoundingClientRect();
+      const windowHeight = window.innerHeight;
+
+      // Gallery enters active dark viewport zone
+      if (galleryRect.top < windowHeight * 0.65 && galleryRect.bottom > windowHeight * 0.25) {
+        setScrollZone('gallery');
+      } else if (galleryRect.top >= windowHeight * 0.65) {
+        setScrollZone('top');
+      } else {
+        setScrollZone('bottom');
+      }
+    };
+
+    mainEl.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+
+    return () => {
+      mainEl.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
+  // Smooth background color transformation on parent container
+  useEffect(() => {
+    const mainEl = document.querySelector('main');
+    if (!mainEl) return;
+
+    mainEl.style.transition = 'background-color 0.85s cubic-bezier(0.16, 1, 0.3, 1)';
+    if (scrollZone === 'gallery') {
+      mainEl.style.backgroundColor = '#0B0C10';
+    } else if (scrollZone === 'top') {
+      mainEl.style.backgroundColor = '#FFFFFF';
+    } else {
+      mainEl.style.backgroundColor = '#F0F0F0';
+    }
+
+    return () => {
+      mainEl.style.backgroundColor = '';
+    };
+  }, [scrollZone]);
+
   const myTeam = profile
     ? teams.find((t) => t.members.some((m) => m.userId === profile.id))
     : null;
@@ -42,26 +97,42 @@ export const Dashboard: React.FC = () => {
       variants={stagger}
       initial="hidden"
       animate="show"
-      className="flex flex-col gap-6"
+      className="flex flex-col gap-8 transition-colors duration-700"
     >
-      {/* ── HEADER & PRIMARY ACTIONS ────────────────────────────── */}
+      {/* ── HEADER & PRIMARY ACTIONS (HERO - WHITE LENGTH) ────────────────────────────── */}
       <motion.div
         variants={fadeUp}
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b-[1.5px] border-[#191A23]"
+        className={`p-6 sm:p-8 rounded-[28px] border-[1.5px] border-[#191A23] transition-all duration-700 ease-in-out ${
+          scrollZone === 'gallery'
+            ? 'bg-[#191A23] text-white shadow-[0_8px_30px_rgba(0,0,0,0.5)]'
+            : 'bg-white text-[#191A23] shadow-[0_4px_0_#191A23]'
+        } flex flex-col sm:flex-row sm:items-center justify-between gap-4`}
       >
         <div>
           <div className="flex items-center gap-2 mb-2">
             <span className="tag-highlight text-[11px] font-mono uppercase tracking-wider">
               Academic Session 2026
             </span>
-            <span className="text-xs text-[#191A23] font-semibold">
+            <span
+              className={`text-xs font-semibold ${
+                scrollZone === 'gallery' ? 'text-gray-300' : 'text-[#191A23]'
+              }`}
+            >
               &bull; {HOURS_LEFT}h Remaining
             </span>
           </div>
-          <h1 className="text-2xl sm:text-4xl font-heading font-bold text-[#191A23] tracking-tight">
+          <h1
+            className={`text-2xl sm:text-4xl font-heading font-bold tracking-tight ${
+              scrollZone === 'gallery' ? 'text-white' : 'text-[#191A23]'
+            }`}
+          >
             Welcome back, {profile?.fullName?.split(' ')[0] ?? 'Builder'}
           </h1>
-          <p className="text-xs sm:text-sm text-[#6B7280] mt-1 max-w-xl">
+          <p
+            className={`text-xs sm:text-sm mt-1 max-w-xl ${
+              scrollZone === 'gallery' ? 'text-gray-400' : 'text-[#6B7280]'
+            }`}
+          >
             Everything you need for faculty supervision, team collaboration, and venue navigation in one unified platform.
           </p>
         </div>
@@ -86,18 +157,34 @@ export const Dashboard: React.FC = () => {
           )}
 
           <button
-            className="commons-btn-secondary"
+            className={`py-2 px-3.5 text-xs font-bold rounded-xl border flex items-center gap-2 cursor-pointer transition-all ${
+              scrollZone === 'gallery'
+                ? 'bg-[#2A2B3D] text-white border-[#3A3B4D] hover:bg-[#B9FF66] hover:text-[#191A23]'
+                : 'commons-btn-secondary'
+            }`}
             onClick={() => navigate('/map')}
           >
-            <MapPin className="w-4 h-4 text-[#191A23]" />
+            <MapPin className="w-4 h-4" />
             <span>Floor Map</span>
           </button>
         </div>
       </motion.div>
 
-      {/* ── IMAGE GALLERY (COHORT & EVENT SNAPSHOTS) ───────────── */}
-      <motion.div variants={fadeUp}>
-        <SharedPhotoGallery />
+      {/* ── IMAGE GALLERY (DARK SHOWCASE ZONE WITH AURORA AMBIENT GLOW) ───────────── */}
+      <motion.div
+        ref={galleryRef}
+        id="dashboard-gallery-section"
+        variants={fadeUp}
+        className="relative"
+      >
+        {/* Animated ambient aurora glow behind the dark gallery */}
+        <div
+          className={`absolute -inset-4 sm:-inset-6 bg-gradient-to-r from-[#B9FF66]/20 via-indigo-600/15 to-[#B9FF66]/20 rounded-[36px] blur-3xl pointer-events-none transition-opacity duration-1000 ${
+            scrollZone === 'gallery' ? 'opacity-90 animate-pulse' : 'opacity-0'
+          }`}
+        />
+
+        <SharedPhotoGallery isDarkMode={scrollZone === 'gallery'} />
       </motion.div>
 
       {/* ── 3 CORE POSITIVUS DUAL-CARD OVERVIEWS ───────────────── */}

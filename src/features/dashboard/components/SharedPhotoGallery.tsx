@@ -25,7 +25,11 @@ import { supabase } from '@/lib/supabase';
 
 const FILTER_TAGS = ['All', 'Live Demo', 'Prototype', 'Workshop', 'Keynote', 'Team'];
 
-export const SharedPhotoGallery: React.FC = () => {
+export interface SharedPhotoGalleryProps {
+  isDarkMode?: boolean;
+}
+
+export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = ({ isDarkMode = false }) => {
   const { profile } = useAuth();
   const { teams } = useTeams();
 
@@ -437,17 +441,31 @@ export const SharedPhotoGallery: React.FC = () => {
   };
 
   return (
-    <div className="commons-card p-6 sm:p-8 bg-white flex flex-col gap-6">
+    <div
+      className={`commons-card p-6 sm:p-8 flex flex-col gap-6 transition-all duration-700 ease-in-out ${
+        isDarkMode
+          ? 'bg-[#12131C] text-white border-[1.5px] border-[#2A2B3D] shadow-[0_12px_45px_rgba(0,0,0,0.8)]'
+          : 'bg-white text-[#191A23]'
+      }`}
+    >
       {/* Hidden offscreen canvas for frame capture */}
       <canvas ref={canvasRef} className="hidden" />
 
       {/* ── HEADER & ACTIONS ────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b-[1.5px] border-[#191A23]">
+      <div
+        className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b-[1.5px] transition-colors duration-500 ${
+          isDarkMode ? 'border-[#2A2B3D]' : 'border-[#191A23]'
+        }`}
+      >
         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
           <span className="tag-highlight font-heading text-lg sm:text-xl font-bold">
             Image Gallery
           </span>
-          <p className="text-xs text-[#6B7280]">
+          <p
+            className={`text-xs transition-colors duration-500 ${
+              isDarkMode ? 'text-gray-400' : 'text-[#6B7280]'
+            }`}
+          >
             Keynote sessions, cohort milestones & team prototypes
           </p>
         </div>
@@ -455,7 +473,7 @@ export const SharedPhotoGallery: React.FC = () => {
         <div className="flex items-center gap-2.5 shrink-0">
           <button
             onClick={() => openModal('camera')}
-            className="commons-btn-primary py-2 px-3.5 text-xs flex items-center gap-1.5 cursor-pointer"
+            className="commons-btn-primary py-2 px-3.5 text-xs flex items-center gap-1.5 cursor-pointer shadow-[0_3px_0_#000]"
             title="Take photo directly from your camera"
           >
             <Camera className="w-3.5 h-3.5" />
@@ -465,7 +483,11 @@ export const SharedPhotoGallery: React.FC = () => {
 
           <button
             onClick={() => openModal('upload')}
-            className="commons-btn-secondary py-2 px-3 text-xs flex items-center gap-1 cursor-pointer"
+            className={`py-2 px-3 text-xs flex items-center gap-1 cursor-pointer rounded-xl font-bold border transition-all ${
+              isDarkMode
+                ? 'bg-[#1E1F2B] text-white border-[#3A3B4D] hover:bg-[#B9FF66] hover:text-[#191A23] hover:border-[#B9FF66]'
+                : 'commons-btn-secondary'
+            }`}
             title="Upload photo from disk"
           >
             <Upload className="w-3.5 h-3.5" />
@@ -480,10 +502,12 @@ export const SharedPhotoGallery: React.FC = () => {
           <button
             key={tag}
             onClick={() => setSelectedTag(tag)}
-            className={`px-3.5 py-1.5 rounded-[12px] text-xs font-bold whitespace-nowrap transition-all cursor-pointer border-[1.5px] border-[#191A23] ${
+            className={`px-3.5 py-1.5 rounded-[12px] text-xs font-bold whitespace-nowrap transition-all cursor-pointer border-[1.5px] ${
               selectedTag === tag
-                ? 'bg-[#191A23] text-[#B9FF66] shadow-[0_3px_0_#191A23]'
-                : 'bg-white text-[#191A23] hover:bg-[#F3F3F3]'
+                ? 'bg-[#B9FF66] text-[#191A23] border-[#191A23] shadow-[0_3px_0_#000]'
+                : isDarkMode
+                ? 'bg-[#1E1F2B] text-gray-300 border-[#2A2B3D] hover:bg-[#28293D] hover:text-white'
+                : 'bg-white text-[#191A23] border-[#191A23] hover:bg-[#F3F3F3]'
             }`}
           >
             {tag}
@@ -493,15 +517,29 @@ export const SharedPhotoGallery: React.FC = () => {
 
       {/* ── IMAGE GALLERY (MOBILE HORIZONTAL TOUCH SCROLL & AUTO CAROUSEL / DESKTOP GRID) ──── */}
       {filteredPhotos.length === 0 ? (
-        <div className="rounded-[22px] border-[1.5px] border-[#191A23] border-dashed bg-[#F9F9FB] p-8 sm:p-12 text-center flex flex-col items-center justify-center gap-4">
+        <div
+          className={`rounded-[22px] border-[1.5px] border-dashed p-8 sm:p-12 text-center flex flex-col items-center justify-center gap-4 transition-all duration-500 ${
+            isDarkMode
+              ? 'border-[#2A2B3D] bg-[#161724] text-white'
+              : 'border-[#191A23] bg-[#F9F9FB] text-[#191A23]'
+          }`}
+        >
           <div className="w-14 h-14 rounded-2xl bg-[#B9FF66] border-[1.5px] border-[#191A23] flex items-center justify-center shadow-[0_3px_0_#191A23]">
             <Camera className="w-7 h-7 text-[#191A23]" />
           </div>
           <div className="max-w-md">
-            <h4 className="font-heading text-base sm:text-lg font-bold text-[#191A23]">
+            <h4
+              className={`font-heading text-base sm:text-lg font-bold transition-colors ${
+                isDarkMode ? 'text-white' : 'text-[#191A23]'
+              }`}
+            >
               No shared photos yet
             </h4>
-            <p className="text-xs sm:text-sm text-[#6B7280] mt-1 leading-relaxed">
+            <p
+              className={`text-xs sm:text-sm mt-1 leading-relaxed transition-colors ${
+                isDarkMode ? 'text-gray-400' : 'text-[#6B7280]'
+              }`}
+            >
               Be the first to share a moment! Snap photos of your team working, prototype demos, or venue highlights.
             </p>
           </div>
@@ -515,7 +553,11 @@ export const SharedPhotoGallery: React.FC = () => {
             </button>
             <button
               onClick={() => openModal('upload')}
-              className="commons-btn-secondary py-2 px-4 text-xs flex items-center gap-2 cursor-pointer shadow-[0_2px_0_#191A23]"
+              className={`py-2 px-4 text-xs flex items-center gap-2 cursor-pointer rounded-xl font-bold border transition-all ${
+                isDarkMode
+                  ? 'bg-[#1E1F2B] text-white border-[#3A3B4D] hover:bg-[#B9FF66] hover:text-[#191A23]'
+                  : 'commons-btn-secondary'
+              }`}
             >
               <Upload className="w-4 h-4" />
               <span>Upload Image</span>
@@ -540,7 +582,13 @@ export const SharedPhotoGallery: React.FC = () => {
                 className="w-[76vw] max-w-[320px] sm:w-[300px] md:w-auto md:max-w-none snap-center shrink-0 md:shrink flex flex-col group cursor-pointer"
               >
                 {/* Cover image container - Clean 4:3 natural camera aspect ratio (zero stretch) */}
-                <div className="relative aspect-[4/3] w-full rounded-[20px] overflow-hidden bg-[#F3F3F3] border-[1.5px] border-[#191A23] shadow-[0_4px_0_#191A23] group-hover:shadow-[0_6px_0_#191A23] group-hover:-translate-y-0.5 transition-all">
+                <div
+                  className={`relative aspect-[4/3] w-full rounded-[20px] overflow-hidden border-[1.5px] transition-all duration-500 ${
+                    isDarkMode
+                      ? 'bg-[#1A1B26] border-[#2A2B3D] shadow-[0_6px_20px_rgba(0,0,0,0.6)] group-hover:border-[#B9FF66] group-hover:shadow-[0_8px_25px_rgba(185,255,102,0.25)]'
+                      : 'bg-[#F3F3F3] border-[#191A23] shadow-[0_4px_0_#191A23] group-hover:shadow-[0_6px_0_#191A23]'
+                  } group-hover:-translate-y-0.5`}
+                >
                   <img
                     src={photo.url}
                     alt={photo.title}
@@ -557,13 +605,21 @@ export const SharedPhotoGallery: React.FC = () => {
                   <div className="absolute top-3 right-3 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={(e) => handleToggleLike(photo.id, e)}
-                      className="w-8 h-8 rounded-full bg-white/95 backdrop-blur-md border border-[#191A23] text-[#191A23] flex items-center justify-center hover:bg-[#B9FF66] transition-colors shadow-sm cursor-pointer"
+                      className={`w-8 h-8 rounded-full backdrop-blur-md border flex items-center justify-center hover:bg-[#B9FF66] hover:text-[#191A23] transition-colors shadow-sm cursor-pointer ${
+                        isDarkMode
+                          ? 'bg-[#191A23]/90 border-[#3A3B4D] text-white'
+                          : 'bg-white/95 border-[#191A23] text-[#191A23]'
+                      }`}
                       title="Like photo"
                     >
                       <Heart className={`w-3.5 h-3.5 ${photo.likedByMe ? 'fill-[#E11D48] text-[#E11D48]' : ''}`} />
                     </button>
                     <div
-                      className="w-8 h-8 rounded-full bg-white/95 backdrop-blur-md border border-[#191A23] text-[#191A23] flex items-center justify-center hover:bg-[#B9FF66] transition-colors shadow-sm"
+                      className={`w-8 h-8 rounded-full backdrop-blur-md border flex items-center justify-center hover:bg-[#B9FF66] hover:text-[#191A23] transition-colors shadow-sm ${
+                        isDarkMode
+                          ? 'bg-[#191A23]/90 border-[#3A3B4D] text-white'
+                          : 'bg-white/95 border-[#191A23] text-[#191A23]'
+                      }`}
                       title="View fullscreen"
                     >
                       <Maximize2 className="w-3.5 h-3.5" />
@@ -578,13 +634,21 @@ export const SharedPhotoGallery: React.FC = () => {
                     <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-[#4F46E5] text-white">
                       {photo.tags?.[0] || 'SNAPSHOT'}
                     </span>
-                    <span className="text-xs font-mono text-[#9CA3AF]">
+                    <span
+                      className={`text-xs font-mono transition-colors duration-500 ${
+                        isDarkMode ? 'text-gray-400' : 'text-[#9CA3AF]'
+                      }`}
+                    >
                       {photo.createdAt?.slice(0, 10) || 'Today'}
                     </span>
                   </div>
 
                   {/* Title */}
-                  <h3 className="font-heading font-bold text-base sm:text-lg text-[#191A23] leading-snug line-clamp-2 mt-2 group-hover:underline">
+                  <h3
+                    className={`font-heading font-bold text-base sm:text-lg leading-snug line-clamp-2 mt-2 group-hover:underline transition-colors duration-500 ${
+                      isDarkMode ? 'text-white group-hover:text-[#B9FF66]' : 'text-[#191A23]'
+                    }`}
+                  >
                     {photo.title}
                   </h3>
 
@@ -599,7 +663,11 @@ export const SharedPhotoGallery: React.FC = () => {
           </div>
 
           {/* ── MOBILE PAGINATION DOTS & AUTO-CAROUSEL CONTROLS ── */}
-          <div className="flex md:hidden items-center justify-between pt-2 px-1 border-t border-[#191A23]/10">
+          <div
+            className={`flex md:hidden items-center justify-between pt-2 px-1 border-t transition-colors duration-500 ${
+              isDarkMode ? 'border-[#2A2B3D]' : 'border-[#191A23]/10'
+            }`}
+          >
             <div className="flex items-center gap-1.5">
               {filteredPhotos.map((_, i) => (
                 <button
@@ -607,7 +675,11 @@ export const SharedPhotoGallery: React.FC = () => {
                   onClick={() => scrollToIndex(i)}
                   className={`h-2 transition-all rounded-full cursor-pointer ${
                     i === activeMobileIndex
-                      ? 'w-6 bg-[#191A23]'
+                      ? isDarkMode
+                        ? 'w-6 bg-[#B9FF66]'
+                        : 'w-6 bg-[#191A23]'
+                      : isDarkMode
+                      ? 'w-2 bg-[#2A2B3D] hover:bg-[#4B4E68]'
                       : 'w-2 bg-[#D1D5DB] hover:bg-[#9CA3AF]'
                   }`}
                   aria-label={`Go to slide ${i + 1}`}
@@ -616,7 +688,11 @@ export const SharedPhotoGallery: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-mono font-bold text-[#6B7280]">
+              <span
+                className={`text-[11px] font-mono font-bold transition-colors duration-500 ${
+                  isDarkMode ? 'text-gray-400' : 'text-[#6B7280]'
+                }`}
+              >
                 {activeMobileIndex + 1} / {filteredPhotos.length}
               </span>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#B9FF66] text-[#191A23] font-bold">
