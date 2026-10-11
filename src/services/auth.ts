@@ -1,5 +1,6 @@
 import { sql, isNeonConfigured } from '@/lib/neon';
 import { db } from '@/lib/db';
+import { hashPassword, verifyPassword } from '@/lib/crypto';
 import type { Profile, SignInCredentials, SignUpCredentials } from '@/types/schemas/auth';
 import type { UserId } from '@/types/ids';
 import { UserRole } from '@/types/enums';
@@ -91,6 +92,15 @@ export const authService = {
 
         if (rows && rows.length > 0 && rows[0]) {
           const row = rows[0] as any;
+
+          // Verify hashed password
+          if (row.password_hash) {
+            const isValid = await verifyPassword(password, row.password_hash);
+            if (!isValid) {
+              throw new Error('Incorrect password. Please verify your credentials.');
+            }
+          }
+
           const profile: Profile = {
             id: row.id as UserId,
             email: row.email,
@@ -107,7 +117,7 @@ export const authService = {
           db.registeredProfiles.insert({
             id: profile.id,
             email: profile.email,
-            password,
+            password: row.password_hash || '',
             fullName: profile.fullName,
             role: profile.role,
           });
@@ -116,7 +126,10 @@ export const authService = {
           notifyAuthListeners(profile);
           return profile;
         }
-      } catch (err) {
+      } catch (err: any) {
+        if (err.message && err.message.includes('Incorrect password')) {
+          throw err;
+        }
         console.warn('Neon signIn query notice:', err);
       }
     }
@@ -124,8 +137,11 @@ export const authService = {
     // Local cached profiles
     const existing = db.registeredProfiles.getByEmail(email);
     if (existing) {
-      if (existing.password && password && existing.password !== password) {
-        throw new Error('Incorrect password. Please verify your credentials.');
+      if (existing.password && password) {
+        const isValid = await verifyPassword(password, existing.password);
+        if (!isValid) {
+          throw new Error('Incorrect password. Please verify your credentials.');
+        }
       }
 
       const profile: Profile = {
@@ -156,6 +172,7 @@ export const authService = {
     const email = credentials.email.trim().toLowerCase();
     const role = credentials.role || UserRole.STUDENT;
     const password = credentials.password?.trim() || '';
+    const passwordHash = await hashPassword(password);
 
     let generatedId = (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : ('usr-' + Math.random().toString(36).substring(2, 9))) as UserId;
 
@@ -163,8 +180,9 @@ export const authService = {
       try {
         const rows = await sql`
           INSERT INTO profiles (email, password_hash, full_name, role, bio)
-          VALUES (${email}, ${password}, ${name}, ${role}, ${bioText})
+          VALUES (${email}, ${passwordHash}, ${name}, ${role}, ${bioText})
           ON CONFLICT (email) DO UPDATE SET
+            password_hash = COALESCE(EXCLUDED.password_hash, profiles.password_hash),
             full_name = EXCLUDED.full_name,
             bio = EXCLUDED.bio,
             updated_at = now()
@@ -195,7 +213,7 @@ export const authService = {
     db.registeredProfiles.insert({
       id: newProfile.id,
       email,
-      password,
+      password: passwordHash,
       fullName: name,
       rollNumber: rollNo,
       role,

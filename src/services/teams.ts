@@ -1,5 +1,6 @@
 import { sql, isNeonConfigured } from '@/lib/neon';
 import { db, DEFAULT_ACADEMIC_MILESTONES, DEFAULT_FACULTY_GUIDE } from '@/lib/db';
+import { hashPassword } from '@/lib/crypto';
 import { AppError, ErrorCode } from '@/types/errors';
 import type { Team, CreateTeamInput, TeamMember, TeamMilestone } from '@/types/schemas/team';
 import type { TeamId, HackathonId, UserId } from '@/types/ids';
@@ -461,7 +462,8 @@ export const teamsService = {
     const role = input.role || 'member';
     const email = input.email.trim().toLowerCase();
     const fullName = input.fullName.trim();
-    const password = input.password?.trim() || 'HackHub@2026';
+    const rawPassword = input.password?.trim() || 'HackHub@2026';
+    const passwordHash = await hashPassword(rawPassword);
 
     let userId: string = '';
 
@@ -476,7 +478,7 @@ export const teamsService = {
         } else {
           const insertedUsers = await sql`
             INSERT INTO profiles (email, password_hash, full_name, role)
-            VALUES (${email}, ${password}, ${fullName}, 'student')
+            VALUES (${email}, ${passwordHash}, ${fullName}, 'student')
             RETURNING id
           `;
           if (insertedUsers && insertedUsers.length > 0 && insertedUsers[0]) {
@@ -516,6 +518,14 @@ export const teamsService = {
           db.teams.update(input.teamId, { members: localTeam.members });
         }
 
+        db.registeredProfiles.insert({
+          id: userId || newMember.userId,
+          email,
+          password: passwordHash,
+          fullName,
+          role: 'student',
+        });
+
         return newMember;
       } catch (err) {
         console.warn('Neon addTeamMember notice:', err);
@@ -541,6 +551,14 @@ export const teamsService = {
       localTeam.members.push(newMember);
       db.teams.update(input.teamId, { members: localTeam.members });
     }
+
+    db.registeredProfiles.insert({
+      id: newMember.userId,
+      email,
+      password: passwordHash,
+      fullName,
+      role: 'student',
+    });
 
     return newMember;
   },
