@@ -326,25 +326,25 @@ export const HeroPhotoBanner: React.FC = () => {
       <canvas ref={canvasRef} className="hidden" />
 
       {/* Top Action Bar: Upload, Snap, and View Switcher */}
-      <div className="flex items-center justify-between gap-3 px-1">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
-            <Camera className="w-3.5 h-3.5 text-indigo-600" />
-            <span>Event Photo Stream</span>
+      <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="text-xs font-semibold text-slate-800 flex items-center gap-1.5 truncate">
+            <Camera className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+            <span className="truncate">Event Photos</span>
           </span>
           {photoCount > 0 && (
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-slate-100 text-slate-600 border border-slate-200">
-              {photoCount} {photoCount === 1 ? 'photo' : 'photos'}
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
+              {photoCount}
             </span>
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 shrink-0">
           {photoCount > 1 && (
             <div className="flex items-center rounded-xl bg-slate-100 p-0.5 border border-slate-200 text-xs">
               <button
                 onClick={() => setViewMode('spotlight')}
-                className={`px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer flex items-center gap-1 text-[11px] ${
+                className={`px-2 py-1 rounded-lg font-medium transition-all cursor-pointer flex items-center gap-1 text-[11px] ${
                   viewMode === 'spotlight'
                     ? 'bg-white text-slate-900 shadow-2xs font-semibold'
                     : 'text-slate-500 hover:text-slate-800'
@@ -356,7 +356,7 @@ export const HeroPhotoBanner: React.FC = () => {
               </button>
               <button
                 onClick={() => setViewMode('grid')}
-                className={`px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer flex items-center gap-1 text-[11px] ${
+                className={`px-2 py-1 rounded-lg font-medium transition-all cursor-pointer flex items-center gap-1 text-[11px] ${
                   viewMode === 'grid'
                     ? 'bg-white text-slate-900 shadow-2xs font-semibold'
                     : 'text-slate-500 hover:text-slate-800'
@@ -371,7 +371,7 @@ export const HeroPhotoBanner: React.FC = () => {
 
           <button
             onClick={() => openUploadModal('camera')}
-            className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+            className="px-2.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs flex items-center gap-1 shadow-2xs transition-all cursor-pointer"
           >
             <Camera className="w-3.5 h-3.5" />
             <span>Snap</span>
@@ -379,7 +379,7 @@ export const HeroPhotoBanner: React.FC = () => {
 
           <button
             onClick={() => openUploadModal('upload')}
-            className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs border border-slate-200 shadow-2xs transition-all cursor-pointer flex items-center gap-1.5"
+            className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs border border-slate-200 shadow-2xs transition-all cursor-pointer flex items-center gap-1"
           >
             <Upload className="w-3.5 h-3.5 text-slate-500" />
             <span>Upload</span>
@@ -390,7 +390,7 @@ export const HeroPhotoBanner: React.FC = () => {
       {/* Main Content Area */}
       {photoCount === 0 ? (
         /* Empty State: Zero hardcoded images */
-        <div className="w-full rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/70 p-8 sm:p-12 text-center flex flex-col items-center justify-center gap-3">
+        <div className="w-full rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/70 p-6 sm:p-12 text-center flex flex-col items-center justify-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center shadow-2xs">
             <Camera className="w-6 h-6" />
           </div>
@@ -400,7 +400,7 @@ export const HeroPhotoBanner: React.FC = () => {
               Capture live moments, team workspace snapshots, and hardware prototypes directly from the venue floor.
             </p>
           </div>
-          <div className="flex items-center gap-2 mt-2">
+          <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
             <button
               onClick={() => openUploadModal('camera')}
               className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs flex items-center gap-1.5 shadow-2xs cursor-pointer"
@@ -422,11 +422,11 @@ export const HeroPhotoBanner: React.FC = () => {
         <div className="flex flex-col gap-2.5">
           <div className="relative w-full rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 shadow-md group">
             {/* The Image (Hero visual element) */}
-            <div className="relative w-full aspect-[16/9] sm:aspect-[21/9] max-h-[460px] flex items-center justify-center bg-black">
+            <div className="relative w-full aspect-[4/3] sm:aspect-[16/9] md:aspect-[21/9] max-h-[460px] flex items-center justify-center bg-black">
               <img
                 src={currentPhoto.url}
                 alt={currentPhoto.title}
-                className="w-full h-full object-contain sm:object-cover cursor-pointer select-none"
+                className="w-full h-full object-cover cursor-pointer select-none"
                 onClick={() => setSelectedPhoto(currentPhoto)}
               />
 
@@ -482,12 +482,12 @@ export const HeroPhotoBanner: React.FC = () => {
               )}
 
               {/* Bottom Subtle Bar on Image: Small font size, clean text */}
-              <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-3 pointer-events-auto">
-                <div className="min-w-0 pr-2">
+              <div className="absolute bottom-2.5 sm:bottom-3 left-2.5 sm:left-3 right-2.5 sm:right-3 flex items-center justify-between gap-2 pointer-events-auto">
+                <div className="min-w-0 pr-1 sm:pr-2">
                   <h4 className="text-xs sm:text-sm font-semibold text-white truncate drop-shadow-xs">
                     {currentPhoto.title}
                   </h4>
-                  <div className="flex items-center gap-2 text-[10px] text-slate-300 mt-0.5">
+                  <div className="flex items-center gap-1.5 text-[10px] text-slate-300 mt-0.5">
                     <span className="truncate">{currentPhoto.uploadedBy?.name || 'Hacker'}</span>
                     <span>•</span>
                     <span className="font-mono">{currentPhoto.createdAt}</span>
@@ -497,7 +497,7 @@ export const HeroPhotoBanner: React.FC = () => {
                 {/* Like Button */}
                 <button
                   onClick={(e) => handleToggleLike(currentPhoto.id, e)}
-                  className={`px-2.5 py-1 rounded-lg backdrop-blur-md border text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer shrink-0 ${
+                  className={`px-2 py-1 rounded-lg backdrop-blur-md border text-xs font-medium flex items-center gap-1 transition-all cursor-pointer shrink-0 ${
                     currentPhoto.likedByMe
                       ? 'bg-rose-500/25 border-rose-500/50 text-rose-300'
                       : 'bg-black/50 hover:bg-black/70 border-white/15 text-slate-200'

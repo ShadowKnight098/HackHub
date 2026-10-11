@@ -299,8 +299,8 @@ export const AppLayout: React.FC = () => {
         </header>
 
         {/* Page body */}
-        <main ref={mainScrollRef} className="flex-1 overflow-y-auto bg-[#F8FAFC] scroll-smooth">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-24 md:pb-8">
+        <main ref={mainScrollRef} className="flex-1 overflow-y-auto overflow-x-hidden bg-[#F8FAFC] scroll-smooth">
+          <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-3 sm:pt-4 pb-28 md:pb-8">
             <ErrorBoundary>
               <Outlet />
             </ErrorBoundary>

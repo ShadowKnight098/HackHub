@@ -28,12 +28,17 @@ const dbUrl =
   import.meta.env.DATABASE_URL ||
   '';
 
+const imagekitUrl = import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT || 'https://ik.imagekit.io/yhi7cragd/something';
+const imagekitPublicKey = import.meta.env.VITE_IMAGEKIT_PUBLIC_KEY || 'public_JghfxXwOa5llJM5EH+HhNJzXqyk=';
+const imagekitPrivateKey = import.meta.env.VITE_IMAGEKIT_PRIVATE_KEY || 'private_IhEzuY0pIMwTcU5BHezMgih+yjA=';
+
 export const env = {
   databaseUrl: dbUrl,
-  imagekitUrlEndpoint: import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT || 'https://ik.imagekit.io/yhi7cragd/something',
-  imagekitPublicKey: import.meta.env.VITE_IMAGEKIT_PUBLIC_KEY || 'public_JghfxXwOa5llJM5EH+HhNJzXqyk=',
+  imagekitUrlEndpoint: imagekitUrl,
+  imagekitPublicKey: imagekitPublicKey,
+  imagekitPrivateKey: imagekitPrivateKey,
   mapStyleUrl: import.meta.env.VITE_MAP_STYLE_URL || 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
   isNeonConfigured: Boolean(dbUrl && dbUrl.startsWith('postgres')),
-  isImageKitConfigured: Boolean(import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT && import.meta.env.VITE_IMAGEKIT_PUBLIC_KEY),
+  isImageKitConfigured: Boolean(imagekitUrl && imagekitPublicKey && imagekitPrivateKey),
   isConfigured: Boolean(dbUrl && dbUrl.startsWith('postgres')),
 };
