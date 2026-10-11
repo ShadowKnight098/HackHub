@@ -41,29 +41,28 @@ export const UserProfile: React.FC = () => {
       className="max-w-2xl mx-auto flex flex-col gap-6"
     >
       <div>
-        <h1 className="text-3xl font-heading text-[var(--ink)]">Participant Profile</h1>
-        <div className="title-rule" />
-        <p className="text-sm text-[var(--muted)]">
+        <h1 className="text-2xl sm:text-3xl font-heading font-bold text-slate-900 tracking-tight">Participant Profile</h1>
+        <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
           Manage your credentials, expertise tags, and platform authorization role.
         </p>
       </div>
 
-      <div className="commons-card p-8 bg-[var(--surface)]">
+      <div className="commons-card p-6 sm:p-8 bg-white border border-slate-200/90 shadow-sm rounded-2xl">
         <form onSubmit={handleSave} className="flex flex-col gap-6">
           {/* Header Row */}
-          <div className="flex items-center gap-5 pb-6 border-b border-[var(--line)]">
+          <div className="flex items-center gap-5 pb-6 border-b border-slate-100">
             <div className="relative">
               <Avatar
                 size="lg"
                 src={profile.avatarUrl || undefined}
                 name={profile.fullName.slice(0, 2).toUpperCase()}
-                className="w-16 h-16 text-lg font-heading font-bold border-2 border-[var(--sun)] bg-[color-mix(in_srgb,var(--sun)_18%,var(--surface))] text-[var(--ink)]"
+                className="w-16 h-16 text-lg font-heading font-bold bg-indigo-100 text-indigo-700 border-2 border-indigo-200"
               />
             </div>
             <div>
-              <h2 className="font-heading text-xl text-[var(--ink)]">{profile.fullName}</h2>
-              <div className="flex items-center gap-2 text-xs text-[var(--muted)] mt-1 font-mono">
-                <Mail className="w-3.5 h-3.5 text-[var(--muted)]" />
+              <h2 className="font-heading text-xl text-slate-900 font-bold">{profile.fullName}</h2>
+              <div className="flex items-center gap-2 text-xs text-slate-500 mt-1 font-mono">
+                <Mail className="w-3.5 h-3.5 text-slate-400" />
                 <span>{profile.email}</span>
               </div>
             </div>
@@ -117,13 +116,13 @@ export const UserProfile: React.FC = () => {
           </div>
 
           {/* Actions */}
-          <div className="flex justify-between items-center pt-4 border-t border-[var(--line)]">
+          <div className="flex justify-between items-center pt-4 border-t border-slate-100">
             {saved ? (
-              <span className="flex items-center gap-1.5 text-xs text-[var(--moss)] font-semibold">
+              <span className="flex items-center gap-1.5 text-xs text-emerald-600 font-semibold">
                 <Check className="w-4 h-4" /> Changes saved to session.
               </span>
             ) : (
-              <span className="font-accent italic text-xs text-[var(--muted)]">
+              <span className="text-xs text-slate-500">
                 Modifications update immediately.
               </span>
             )}
@@ -140,15 +139,15 @@ export const UserProfile: React.FC = () => {
       </div>
 
       {/* Session Management Zone */}
-      <div className="commons-card p-6 bg-[var(--surface)] border border-[var(--line)] flex items-center justify-between">
+      <div className="commons-card p-6 bg-white border border-slate-200/90 shadow-sm rounded-2xl flex items-center justify-between">
         <div>
-          <h3 className="font-heading text-sm text-[var(--ink)]">Active Participant Session</h3>
-          <p className="text-xs text-[var(--muted)] mt-0.5">End your current session on this device and return to check-in.</p>
+          <h3 className="font-heading text-sm font-bold text-slate-900">Active Participant Session</h3>
+          <p className="text-xs text-slate-500 mt-0.5">End your current session on this device and return to check-in.</p>
         </div>
         <button
           type="button"
           onClick={handleSignOut}
-          className="commons-btn-secondary text-xs text-[var(--accent)] border-[var(--accent)]/30 hover:bg-[color-mix(in_srgb,var(--accent)_10%,transparent)] py-2 px-4 flex items-center gap-2 cursor-pointer"
+          className="commons-btn-secondary py-2 px-4 text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200 flex items-center gap-2 cursor-pointer"
         >
           <LogOut className="w-4 h-4" />
           <span>Sign Out</span>

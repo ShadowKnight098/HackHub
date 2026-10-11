@@ -29,7 +29,7 @@ export interface SharedPhotoGalleryProps {
   isDarkMode?: boolean;
 }
 
-export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = ({ isDarkMode = false }) => {
+export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = () => {
   const { profile } = useAuth();
   const { teams } = useTeams();
 
@@ -441,39 +441,30 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = ({ isDarkMo
   };
 
   return (
-    <div
-      className={`commons-card p-6 sm:p-8 flex flex-col gap-6 transition-all duration-700 ease-in-out ${
-        isDarkMode
-          ? 'bg-[#12131C] text-white border-[1.5px] border-[#2A2B3D] shadow-[0_12px_45px_rgba(0,0,0,0.8)]'
-          : 'bg-white text-[#191A23]'
-      }`}
-    >
+    <div className="commons-card p-6 sm:p-7 bg-white border border-slate-200/90 shadow-sm flex flex-col gap-5">
       {/* Hidden offscreen canvas for frame capture */}
       <canvas ref={canvasRef} className="hidden" />
 
       {/* ── HEADER & ACTIONS ────────────────────────────────────── */}
-      <div
-        className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b-[1.5px] transition-colors duration-500 ${
-          isDarkMode ? 'border-[#2A2B3D]' : 'border-[#191A23]'
-        }`}
-      >
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-          <span className="tag-highlight font-heading text-lg sm:text-xl font-bold">
-            Image Gallery
-          </span>
-          <p
-            className={`text-xs transition-colors duration-500 ${
-              isDarkMode ? 'text-gray-400' : 'text-[#6B7280]'
-            }`}
-          >
-            Keynote sessions, cohort milestones & team prototypes
-          </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+            <Camera className="w-4 h-4" />
+          </div>
+          <div>
+            <h3 className="font-heading text-base font-bold text-slate-900">
+              Shared Photo Gallery
+            </h3>
+            <p className="text-xs text-slate-500">
+              Keynote sessions, cohort milestones, prototypes, and team moments
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-2.5 shrink-0">
           <button
             onClick={() => openModal('camera')}
-            className="commons-btn-primary py-2 px-3.5 text-xs flex items-center gap-1.5 cursor-pointer shadow-[0_3px_0_#000]"
+            className="commons-btn-primary py-2 px-3.5 text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
             title="Take photo directly from your camera"
           >
             <Camera className="w-3.5 h-3.5" />
@@ -483,11 +474,7 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = ({ isDarkMo
 
           <button
             onClick={() => openModal('upload')}
-            className={`py-2 px-3 text-xs flex items-center gap-1 cursor-pointer rounded-xl font-bold border transition-all ${
-              isDarkMode
-                ? 'bg-[#1E1F2B] text-white border-[#3A3B4D] hover:bg-[#B9FF66] hover:text-[#191A23] hover:border-[#B9FF66]'
-                : 'commons-btn-secondary'
-            }`}
+            className="commons-btn-secondary py-2 px-3.5 text-xs flex items-center gap-1.5 cursor-pointer"
             title="Upload photo from disk"
           >
             <Upload className="w-3.5 h-3.5" />
@@ -497,17 +484,15 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = ({ isDarkMo
       </div>
 
       {/* ── FILTER CHIPS ────────────────────────────────────────── */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
         {FILTER_TAGS.map((tag) => (
           <button
             key={tag}
             onClick={() => setSelectedTag(tag)}
-            className={`px-3.5 py-1.5 rounded-[12px] text-xs font-bold whitespace-nowrap transition-all cursor-pointer border-[1.5px] ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all cursor-pointer ${
               selectedTag === tag
-                ? 'bg-[#B9FF66] text-[#191A23] border-[#191A23] shadow-[0_3px_0_#000]'
-                : isDarkMode
-                ? 'bg-[#1E1F2B] text-gray-300 border-[#2A2B3D] hover:bg-[#28293D] hover:text-white'
-                : 'bg-white text-[#191A23] border-[#191A23] hover:bg-[#F3F3F3]'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80 hover:text-slate-900'
             }`}
           >
             {tag}
@@ -517,49 +502,31 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = ({ isDarkMo
 
       {/* ── IMAGE GALLERY (MOBILE HORIZONTAL TOUCH SCROLL & AUTO CAROUSEL / DESKTOP GRID) ──── */}
       {filteredPhotos.length === 0 ? (
-        <div
-          className={`rounded-[22px] border-[1.5px] border-dashed p-8 sm:p-12 text-center flex flex-col items-center justify-center gap-4 transition-all duration-500 ${
-            isDarkMode
-              ? 'border-[#2A2B3D] bg-[#161724] text-white'
-              : 'border-[#191A23] bg-[#F9F9FB] text-[#191A23]'
-          }`}
-        >
-          <div className="w-14 h-14 rounded-2xl bg-[#B9FF66] border-[1.5px] border-[#191A23] flex items-center justify-center shadow-[0_3px_0_#191A23]">
-            <Camera className="w-7 h-7 text-[#191A23]" />
+        <div className="rounded-2xl border border-dashed border-slate-200 p-8 sm:p-12 text-center flex flex-col items-center justify-center gap-3 bg-slate-50/50">
+          <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-xs">
+            <Camera className="w-6 h-6" />
           </div>
           <div className="max-w-md">
-            <h4
-              className={`font-heading text-base sm:text-lg font-bold transition-colors ${
-                isDarkMode ? 'text-white' : 'text-[#191A23]'
-              }`}
-            >
+            <h4 className="font-heading text-base font-bold text-slate-900">
               No shared photos yet
             </h4>
-            <p
-              className={`text-xs sm:text-sm mt-1 leading-relaxed transition-colors ${
-                isDarkMode ? 'text-gray-400' : 'text-[#6B7280]'
-              }`}
-            >
+            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
               Be the first to share a moment! Snap photos of your team working, prototype demos, or venue highlights.
             </p>
           </div>
-          <div className="flex items-center gap-3 mt-1">
+          <div className="flex items-center gap-2.5 mt-2">
             <button
               onClick={() => openModal('camera')}
-              className="commons-btn-primary py-2 px-4 text-xs flex items-center gap-2 cursor-pointer shadow-[0_2px_0_#191A23]"
+              className="commons-btn-primary py-2 px-4 text-xs flex items-center gap-2 cursor-pointer"
             >
-              <Camera className="w-4 h-4" />
+              <Camera className="w-3.5 h-3.5" />
               <span>Snap Photo</span>
             </button>
             <button
               onClick={() => openModal('upload')}
-              className={`py-2 px-4 text-xs flex items-center gap-2 cursor-pointer rounded-xl font-bold border transition-all ${
-                isDarkMode
-                  ? 'bg-[#1E1F2B] text-white border-[#3A3B4D] hover:bg-[#B9FF66] hover:text-[#191A23]'
-                  : 'commons-btn-secondary'
-              }`}
+              className="commons-btn-secondary py-2 px-4 text-xs flex items-center gap-2 cursor-pointer"
             >
-              <Upload className="w-4 h-4" />
+              <Upload className="w-3.5 h-3.5" />
               <span>Upload Image</span>
             </button>
           </div>
@@ -573,28 +540,22 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = ({ isDarkMo
             onTouchEnd={resumeCarousel}
             onMouseEnter={pauseCarousel}
             onMouseLeave={resumeCarousel}
-            className="flex md:grid md:grid-cols-2 lg:grid-cols-3 overflow-x-auto md:overflow-visible snap-x snap-mandatory md:snap-none gap-4 sm:gap-6 pb-4 md:pb-0 scrollbar-none scroll-smooth touch-pan-x"
+            className="flex md:grid md:grid-cols-2 lg:grid-cols-3 overflow-x-auto md:overflow-visible snap-x snap-mandatory md:snap-none gap-4 sm:gap-5 pb-4 md:pb-0 scrollbar-none scroll-smooth touch-pan-x"
           >
             {filteredPhotos.map((photo) => (
               <div
                 key={photo.id}
                 onClick={() => setSelectedPhoto(photo)}
-                className="w-[76vw] max-w-[320px] sm:w-[300px] md:w-auto md:max-w-none snap-center shrink-0 md:shrink flex flex-col group cursor-pointer"
+                className="w-[76vw] max-w-[320px] sm:w-[300px] md:w-auto md:max-w-none snap-center shrink-0 md:shrink flex flex-col group cursor-pointer bg-white rounded-2xl border border-slate-200/90 hover:border-slate-300 hover:shadow-md transition-all overflow-hidden p-3"
               >
-                {/* Cover image container - Clean 4:3 natural camera aspect ratio (zero stretch) */}
-                <div
-                  className={`relative aspect-[4/3] w-full rounded-[20px] overflow-hidden border-[1.5px] transition-all duration-500 ${
-                    isDarkMode
-                      ? 'bg-[#1A1B26] border-[#2A2B3D] shadow-[0_6px_20px_rgba(0,0,0,0.6)] group-hover:border-[#B9FF66] group-hover:shadow-[0_8px_25px_rgba(185,255,102,0.25)]'
-                      : 'bg-[#F3F3F3] border-[#191A23] shadow-[0_4px_0_#191A23] group-hover:shadow-[0_6px_0_#191A23]'
-                  } group-hover:-translate-y-0.5`}
-                >
+                {/* Cover image container - Clean 4:3 natural camera aspect ratio */}
+                <div className="relative aspect-[4/3] w-full rounded-xl overflow-hidden bg-slate-100">
                   <img
                     src={photo.url}
                     alt={photo.title}
                     loading="lazy"
                     decoding="async"
-                    className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                    className="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src =
                         'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300" fill="%23f3f4f6"><rect width="400" height="300"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%239ca3af" font-family="sans-serif" font-size="14">Image unavailable</text></svg>';
@@ -602,24 +563,16 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = ({ isDarkMo
                   />
 
                   {/* Top hover quick actions */}
-                  <div className="absolute top-3 right-3 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={(e) => handleToggleLike(photo.id, e)}
-                      className={`w-8 h-8 rounded-full backdrop-blur-md border flex items-center justify-center hover:bg-[#B9FF66] hover:text-[#191A23] transition-colors shadow-sm cursor-pointer ${
-                        isDarkMode
-                          ? 'bg-[#191A23]/90 border-[#3A3B4D] text-white'
-                          : 'bg-white/95 border-[#191A23] text-[#191A23]'
-                      }`}
+                      className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-xs border border-slate-200 flex items-center justify-center hover:bg-white text-slate-700 transition-colors shadow-xs cursor-pointer"
                       title="Like photo"
                     >
-                      <Heart className={`w-3.5 h-3.5 ${photo.likedByMe ? 'fill-[#E11D48] text-[#E11D48]' : ''}`} />
+                      <Heart className={`w-3.5 h-3.5 ${photo.likedByMe ? 'fill-rose-500 text-rose-500' : ''}`} />
                     </button>
                     <div
-                      className={`w-8 h-8 rounded-full backdrop-blur-md border flex items-center justify-center hover:bg-[#B9FF66] hover:text-[#191A23] transition-colors shadow-sm ${
-                        isDarkMode
-                          ? 'bg-[#191A23]/90 border-[#3A3B4D] text-white'
-                          : 'bg-white/95 border-[#191A23] text-[#191A23]'
-                      }`}
+                      className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-xs border border-slate-200 flex items-center justify-center hover:bg-white text-slate-700 transition-colors shadow-xs"
                       title="View fullscreen"
                     >
                       <Maximize2 className="w-3.5 h-3.5" />
@@ -628,34 +581,32 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = ({ isDarkMo
                 </div>
 
                 {/* Text Details below image */}
-                <div className="flex flex-col mt-3.5">
+                <div className="flex flex-col mt-3 px-1">
                   {/* Pill & Date row */}
-                  <div className="flex items-center gap-2.5">
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-[#4F46E5] text-white">
+                  <div className="flex items-center justify-between">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/80">
                       {photo.tags?.[0] || 'SNAPSHOT'}
                     </span>
-                    <span
-                      className={`text-xs font-mono transition-colors duration-500 ${
-                        isDarkMode ? 'text-gray-400' : 'text-[#9CA3AF]'
-                      }`}
-                    >
+                    <span className="text-[11px] font-mono text-slate-400">
                       {photo.createdAt?.slice(0, 10) || 'Today'}
                     </span>
                   </div>
 
                   {/* Title */}
-                  <h3
-                    className={`font-heading font-bold text-base sm:text-lg leading-snug line-clamp-2 mt-2 group-hover:underline transition-colors duration-500 ${
-                      isDarkMode ? 'text-white group-hover:text-[#B9FF66]' : 'text-[#191A23]'
-                    }`}
-                  >
+                  <h3 className="font-heading font-bold text-sm leading-snug line-clamp-1 mt-1.5 text-slate-900 group-hover:text-indigo-600 transition-colors">
                     {photo.title}
                   </h3>
 
-                  {/* Location */}
-                  <div className="flex items-center gap-1.5 text-xs text-[#E11D48] font-mono font-semibold uppercase tracking-wider mt-1.5">
-                    <MapPin className="w-3.5 h-3.5 shrink-0 text-[#E11D48]" />
-                    <span className="truncate">{photo.tableNumber || 'Venue Floor'}</span>
+                  {/* Location & Likes row */}
+                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 text-xs text-slate-500">
+                    <div className="flex items-center gap-1 truncate text-[11px]">
+                      <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                      <span className="truncate">{photo.tableNumber || 'Venue Floor'}</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-[11px] font-medium text-slate-500 shrink-0">
+                      <Heart className={`w-3 h-3 ${photo.likedByMe ? 'fill-rose-500 text-rose-500' : 'text-slate-400'}`} />
+                      <span>{photo.likes || 0}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -663,24 +614,14 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = ({ isDarkMo
           </div>
 
           {/* ── MOBILE PAGINATION DOTS & AUTO-CAROUSEL CONTROLS ── */}
-          <div
-            className={`flex md:hidden items-center justify-between pt-2 px-1 border-t transition-colors duration-500 ${
-              isDarkMode ? 'border-[#2A2B3D]' : 'border-[#191A23]/10'
-            }`}
-          >
+          <div className="flex md:hidden items-center justify-between pt-2 px-1 border-t border-slate-100">
             <div className="flex items-center gap-1.5">
               {filteredPhotos.map((_, i) => (
                 <button
                   key={i}
                   onClick={() => scrollToIndex(i)}
-                  className={`h-2 transition-all rounded-full cursor-pointer ${
-                    i === activeMobileIndex
-                      ? isDarkMode
-                        ? 'w-6 bg-[#B9FF66]'
-                        : 'w-6 bg-[#191A23]'
-                      : isDarkMode
-                      ? 'w-2 bg-[#2A2B3D] hover:bg-[#4B4E68]'
-                      : 'w-2 bg-[#D1D5DB] hover:bg-[#9CA3AF]'
+                  className={`h-1.5 transition-all rounded-full cursor-pointer ${
+                    i === activeMobileIndex ? 'w-5 bg-indigo-600' : 'w-1.5 bg-slate-200'
                   }`}
                   aria-label={`Go to slide ${i + 1}`}
                 />
@@ -688,14 +629,10 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = ({ isDarkMo
             </div>
 
             <div className="flex items-center gap-2">
-              <span
-                className={`text-[11px] font-mono font-bold transition-colors duration-500 ${
-                  isDarkMode ? 'text-gray-400' : 'text-[#6B7280]'
-                }`}
-              >
+              <span className="text-[11px] font-mono text-slate-500">
                 {activeMobileIndex + 1} / {filteredPhotos.length}
               </span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#B9FF66] text-[#191A23] font-bold">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">
                 Auto & Swipe
               </span>
             </div>
@@ -713,27 +650,27 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = ({ isDarkMo
             backdrop="blur"
             placement="center"
             classNames={{
-              base: 'border-[1.5px] border-[#191A23] bg-white text-[#191A23] shadow-2xl rounded-[28px] overflow-hidden max-w-[94vw] sm:max-w-2xl',
-              header: 'border-b-[1.5px] border-[#191A23] px-6 py-4 flex items-center justify-between bg-[#F3F3F3]',
+              base: 'border border-slate-200 bg-white text-slate-900 shadow-2xl rounded-2xl overflow-hidden max-w-[94vw] sm:max-w-2xl',
+              header: 'border-b border-slate-100 px-6 py-4 flex items-center justify-between bg-slate-50/50',
               body: 'p-0',
-              footer: 'border-t-[1.5px] border-[#191A23] px-6 py-4 bg-white',
+              footer: 'border-t border-slate-100 px-6 py-4 bg-white',
             }}
           >
             <ModalContent>
               <ModalHeader>
-                <div className="flex items-center gap-3">
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-[#4F46E5] text-white">
+                <div className="flex items-center gap-2.5">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
                     {selectedPhoto.tags?.[0] || 'PHOTO'}
                   </span>
-                  <h3 className="font-heading text-base font-bold text-[#191A23]">
+                  <h3 className="font-heading text-base font-bold text-slate-900">
                     {selectedPhoto.title}
                   </h3>
                 </div>
               </ModalHeader>
 
               <ModalBody>
-                {/* Natural image viewport - preserves aspect ratio completely */}
-                <div className="relative min-h-[220px] max-h-[65vh] bg-[#12131A] flex items-center justify-center overflow-hidden p-3 sm:p-4">
+                {/* Natural image viewport */}
+                <div className="relative min-h-[220px] max-h-[65vh] bg-slate-900 flex items-center justify-center overflow-hidden p-3 sm:p-4">
                   <img
                     src={selectedPhoto.url}
                     alt={selectedPhoto.title}
@@ -743,18 +680,19 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = ({ isDarkMo
                   />
                 </div>
 
-                <div className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs border-t-[1.5px] border-[#191A23] bg-white">
+                <div className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs border-t border-slate-100 bg-white">
                   <div>
-                    <span className="text-[#191A23] font-bold text-sm block">
+                    <span className="text-slate-900 font-bold text-sm block">
                       {selectedPhoto.title}
                     </span>
-                    <div className="flex items-center gap-2 mt-1 text-xs text-[#E11D48] font-mono font-semibold">
-                      <MapPin className="w-3.5 h-3.5" />
+                    <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 font-medium">
+                      <MapPin className="w-3.5 h-3.5 text-rose-500" />
                       <span>{selectedPhoto.tableNumber}</span>
-                      <span className="text-[#9CA3AF]">• {selectedPhoto.createdAt?.slice(0, 10)}</span>
+                      <span className="text-slate-300">•</span>
+                      <span>{selectedPhoto.createdAt?.slice(0, 10)}</span>
                     </div>
                     {selectedPhoto.caption && (
-                      <p className="text-xs text-[#6B7280] mt-1.5 leading-relaxed">
+                      <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
                         {selectedPhoto.caption}
                       </p>
                     )}
@@ -767,8 +705,8 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = ({ isDarkMo
                     <Heart
                       className={`w-4 h-4 ${
                         selectedPhoto.likedByMe
-                          ? 'text-[#E11D48] fill-[#E11D48]'
-                          : 'text-[#6B7280]'
+                          ? 'text-rose-500 fill-rose-500'
+                          : 'text-slate-400'
                       }`}
                     />
                     <span>{selectedPhoto.likes} Likes</span>
@@ -789,20 +727,20 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = ({ isDarkMo
         placement="center"
         hideCloseButton
         classNames={{
-          base: 'border-[1.5px] border-[#191A23] bg-white text-[#191A23] rounded-[28px] shadow-2xl overflow-hidden',
+          base: 'border border-slate-200 bg-white text-slate-900 rounded-2xl shadow-2xl overflow-hidden',
         }}
       >
         <ModalContent>
           <ModalBody className="p-6 sm:p-8 flex flex-col gap-5">
             {/* Top Indicator & Close */}
-            <div className="flex justify-between items-center text-xs font-semibold text-[#6B7280]">
-              <span className="tag-highlight text-[11px] font-mono uppercase">
-                <Sparkles className="w-3.5 h-3.5" />
-                Live Photo Capture
+            <div className="flex justify-between items-center text-xs font-semibold text-slate-500">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+                <span>Live Photo Capture</span>
               </span>
               <button
                 onClick={closeModal}
-                className="text-[#191A23] hover:opacity-75 transition-opacity p-1 -mr-1 cursor-pointer"
+                className="text-slate-400 hover:text-slate-700 transition-colors p-1 -mr-1 cursor-pointer"
                 aria-label="Close modal"
               >
                 <X className="w-5 h-5" />
@@ -810,7 +748,7 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = ({ isDarkMo
             </div>
 
             {/* Mode Switcher Tabs */}
-            <div className="grid grid-cols-2 gap-2 p-1.5 rounded-xl bg-[#F3F3F3] border-[1.5px] border-[#191A23]">
+            <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-slate-100 border border-slate-200">
               <button
                 type="button"
                 onClick={() => {
@@ -818,10 +756,10 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = ({ isDarkMo
                   setNewUrl('');
                   startCamera(cameraFacing);
                 }}
-                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   captureMode === 'camera'
-                    ? 'bg-[#191A23] text-[#B9FF66] shadow-[0_2px_0_#191A23]'
-                    : 'text-[#6B7280] hover:text-[#191A23]'
+                    ? 'bg-white text-indigo-600 shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-900'
                 }`}
               >
                 <Camera className="w-4 h-4" />
@@ -833,10 +771,10 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = ({ isDarkMo
                   setCaptureMode('upload');
                   stopCamera();
                 }}
-                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   captureMode === 'upload'
-                    ? 'bg-[#191A23] text-[#B9FF66] shadow-[0_2px_0_#191A23]'
-                    : 'text-[#6B7280] hover:text-[#191A23]'
+                    ? 'bg-white text-indigo-600 shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-900'
                 }`}
               >
                 <Upload className="w-4 h-4" />
@@ -847,7 +785,7 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = ({ isDarkMo
             {/* Mode 1: Live Camera Viewfinder */}
             {captureMode === 'camera' && (
               <div className="flex flex-col gap-3">
-                <div className="relative aspect-[4/3] rounded-[20px] overflow-hidden bg-black border-[1.5px] border-[#191A23] flex items-center justify-center shadow-inner">
+                <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-slate-900 border border-slate-200 flex items-center justify-center shadow-inner">
                   {isFlashing && (
                     <div className="absolute inset-0 bg-white z-30 pointer-events-none animate-ping" />
                   )}
@@ -873,7 +811,7 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = ({ isDarkMo
                   )}
 
                   {cameraError && !newUrl && (
-                    <div className="absolute inset-0 p-6 flex flex-col items-center justify-center text-center bg-black/85 text-white gap-2">
+                    <div className="absolute inset-0 p-6 flex flex-col items-center justify-center text-center bg-slate-900/90 text-white gap-2">
                       <VideoOff className="w-8 h-8 text-rose-400" />
                       <p className="text-xs text-rose-300 font-mono max-w-xs">{cameraError}</p>
                       <button
@@ -890,7 +828,7 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = ({ isDarkMo
                     <button
                       type="button"
                       onClick={toggleCameraFacing}
-                      className="absolute top-3 right-3 p-2 rounded-full bg-black/60 text-white backdrop-blur-md border border-white/20 hover:bg-black/80 transition-all cursor-pointer shadow-md"
+                      className="absolute top-3 right-3 p-2 rounded-full bg-black/60 text-white backdrop-blur-xs border border-white/20 hover:bg-black/80 transition-all cursor-pointer shadow-md"
                       title="Flip camera"
                     >
                       <RefreshCw className="w-4 h-4" />
@@ -904,7 +842,7 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = ({ isDarkMo
                       type="button"
                       onClick={snapPhoto}
                       disabled={!isCameraActive}
-                      className="commons-btn-primary py-3 px-6 text-sm flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                      className="commons-btn-primary py-2.5 px-6 text-xs flex items-center gap-2 cursor-pointer disabled:opacity-50"
                     >
                       <Camera className="w-4 h-4" />
                       <span>Take Snapshot</span>
@@ -937,25 +875,25 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = ({ isDarkMo
                 {!newUrl ? (
                   <div
                     onClick={() => fileInputRef.current?.click()}
-                    className="aspect-[4/3] rounded-[20px] border-2 border-dashed border-[#191A23] bg-[#F3F3F3] hover:bg-white flex flex-col items-center justify-center p-6 text-center cursor-pointer transition-all group"
+                    className="aspect-[4/3] rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 hover:bg-white flex flex-col items-center justify-center p-6 text-center cursor-pointer transition-all group"
                   >
-                    <div className="w-12 h-12 rounded-2xl border-[1.5px] border-[#191A23] bg-white flex items-center justify-center mb-3 shadow-[0_2px_0_#191A23] group-hover:scale-105 transition-transform">
-                      <Upload className="w-6 h-6 text-[#191A23]" />
+                    <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center mb-3 shadow-2xs group-hover:scale-105 transition-transform text-indigo-600">
+                      <Upload className="w-6 h-6" />
                     </div>
-                    <span className="font-heading font-bold text-sm text-[#191A23]">
+                    <span className="font-heading font-bold text-sm text-slate-900">
                       Click to choose image file
                     </span>
-                    <span className="text-xs text-[#6B7280] mt-1">
+                    <span className="text-xs text-slate-500 mt-1">
                       PNG, JPG, or WEBP up to 10MB
                     </span>
                   </div>
                 ) : (
-                  <div className="relative aspect-[4/3] rounded-[20px] overflow-hidden bg-black border-[1.5px] border-[#191A23]">
+                  <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-slate-900 border border-slate-200">
                     <img src={newUrl} alt="Preview" className="w-full h-full object-cover" />
                     <button
                       type="button"
                       onClick={() => setNewUrl('')}
-                      className="absolute top-3 right-3 p-1.5 rounded-full bg-black/70 text-white backdrop-blur-md hover:bg-black transition-colors cursor-pointer"
+                      className="absolute top-3 right-3 p-1.5 rounded-full bg-black/70 text-white backdrop-blur-xs hover:bg-black transition-colors cursor-pointer"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -966,7 +904,7 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = ({ isDarkMo
 
             {/* Caption & Title input */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-[#191A23] uppercase tracking-wider font-mono">
+              <label className="text-xs font-semibold text-slate-700">
                 Photo Caption / Topic
               </label>
               <input
@@ -974,12 +912,12 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = ({ isDarkMo
                 placeholder="e.g. Chatbots Demo or Machine Learning Part 2"
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
-                className="w-full px-3.5 py-2 text-xs rounded-xl border-[1.5px] border-[#191A23] bg-white text-[#191A23] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#B9FF66]"
+                className="commons-input"
               />
             </div>
 
             {/* Submit Action */}
-            <div className="flex items-center justify-end gap-2.5 pt-2 border-t-[1.5px] border-[#191A23]">
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
               <button
                 type="button"
                 onClick={closeModal}

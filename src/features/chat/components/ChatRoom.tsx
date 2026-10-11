@@ -43,35 +43,35 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ conversationId, title }) => 
   };
 
   return (
-    <div className="h-[620px] commons-card flex flex-col justify-between overflow-hidden bg-[var(--surface)]">
+    <div className="h-[620px] commons-card flex flex-col justify-between overflow-hidden bg-white border border-slate-200">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--line)] bg-[var(--bg)]">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/70">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full border border-[var(--line)] bg-[var(--surface)] flex items-center justify-center text-[var(--ink)]">
-            <Hash className="w-4 h-4 text-[var(--accent)]" />
+          <div className="w-8 h-8 rounded-xl border border-indigo-100 bg-indigo-50 flex items-center justify-center text-indigo-600">
+            <Hash className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="font-heading text-base text-[var(--ink)] leading-tight">{title}</h3>
-            <p className="font-accent italic text-xs text-[var(--muted)]">Continuous cohort stream</p>
+            <h3 className="font-heading text-base font-bold text-slate-900 leading-tight">{title}</h3>
+            <p className="text-xs text-slate-500">Continuous cohort stream</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 px-2.5 py-1 rounded-full border border-[var(--line)] bg-[var(--surface)]">
-          <span className="w-2 h-2 rounded-full bg-[var(--moss)] inline-block" />
-          <span className="text-[10px] font-medium text-[var(--muted)]">Active</span>
+        <div className="flex items-center gap-2 px-2.5 py-1 rounded-full border border-emerald-200 bg-emerald-50">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+          <span className="text-[10px] font-semibold text-emerald-700">Active</span>
         </div>
       </div>
 
       {/* Messages Feed */}
-      <div className="flex-1 p-6 overflow-y-auto flex flex-col gap-4 bg-[var(--surface)]">
+      <div className="flex-1 p-6 overflow-y-auto flex flex-col gap-4 bg-white">
         {isLoading ? (
           <div className="flex justify-center items-center h-full">
             <Spinner size="md" color="primary" label="Connecting stream..." />
           </div>
         ) : messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center text-[var(--muted)]">
-            <p className="font-heading text-sm text-[var(--ink)]">No messages in this channel</p>
-            <p className="font-accent italic text-xs text-[var(--muted)] mt-1">Leave an inquiry or remark below.</p>
+          <div className="flex flex-col items-center justify-center h-full text-center text-slate-400">
+            <p className="font-heading text-sm font-semibold text-slate-700">No messages in this channel</p>
+            <p className="text-xs text-slate-500 mt-1">Leave an inquiry or remark below.</p>
           </div>
         ) : (
           messages.map((msg) => {
@@ -86,18 +86,18 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ conversationId, title }) => 
                 <Avatar
                   src={msg.sender?.avatarUrl || undefined}
                   name={msg.sender?.fullName?.slice(0, 1) || 'U'}
-                  className="w-7 h-7 text-[10px] shrink-0 border border-[var(--line)] bg-[var(--bg)] text-[var(--ink)]"
+                  className="w-7 h-7 text-[10px] shrink-0 border border-slate-200 bg-slate-100 text-slate-700"
                 />
                 <div
-                  className={`p-3.5 rounded-[10px] text-xs sm:text-sm leading-relaxed border ${
+                  className={`p-3.5 rounded-2xl text-xs sm:text-sm leading-relaxed border ${
                     isMe
-                      ? 'bg-[var(--accent)] text-[var(--bg)] border-[var(--accent)] rounded-tr-none'
-                      : 'bg-[var(--bg)] text-[var(--ink)] border-[var(--line)] rounded-tl-none'
+                      ? 'bg-indigo-600 text-white border-indigo-600 rounded-tr-xs shadow-xs'
+                      : 'bg-slate-50 text-slate-800 border-slate-200/80 rounded-tl-xs'
                   }`}
                 >
                   <div
                     className={`flex items-center justify-between gap-4 text-[10px] mb-1 font-semibold ${
-                      isMe ? 'text-[var(--bg)] opacity-80' : 'text-[var(--muted)]'
+                      isMe ? 'text-indigo-100' : 'text-slate-500'
                     }`}
                   >
                     <span>{isMe ? 'You' : msg.sender?.fullName || 'Collaborator'}</span>
@@ -118,19 +118,19 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ conversationId, title }) => 
       </div>
 
       {/* Input Tray */}
-      <div className="p-4 border-t border-[var(--line)] bg-[var(--bg)]">
+      <div className="p-4 border-t border-slate-100 bg-slate-50/60">
         <form onSubmit={handleSend} className="w-full flex gap-3">
           <input
             type="text"
             placeholder={`Message ${title}...`}
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className="flex-1 px-3.5 py-2.5 text-sm rounded-lg border border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] placeholder:text-[var(--muted)] hover:border-[var(--accent)] focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] transition-colors shadow-2xs"
+            className="flex-1 px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 hover:border-indigo-400 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-colors shadow-xs"
           />
           <button
             type="submit"
             disabled={isSending || !content.trim()}
-            className="commons-btn-primary px-4 py-2 shrink-0"
+            className="commons-btn-primary px-4 py-2 shrink-0 disabled:opacity-50"
           >
             <Send className="w-4 h-4" />
           </button>

@@ -36,25 +36,25 @@ export const LoginForm: React.FC = () => {
         {/* Brand header */}
         <div className="flex items-center justify-center gap-3 mb-6">
           <div className="commons-logo-mark">
-            <span className="font-heading font-bold text-sm text-[var(--surface)]">H</span>
+            <span className="font-heading font-bold text-sm text-white">H</span>
           </div>
           <div className="text-left">
-            <p className="font-heading font-bold text-xl text-[var(--ink)] leading-none">HackHub</p>
-            <p className="font-accent italic text-xs text-[var(--moss)]">Ivory & Burgundy</p>
+            <p className="font-heading font-bold text-xl text-slate-900 leading-none">HackHub</p>
+            <p className="text-xs text-slate-500 font-medium">Collaboration Platform</p>
           </div>
         </div>
 
         {/* Card */}
-        <div className="commons-card p-8 sm:p-9 bg-[var(--surface)] rounded-[28px] shadow-2xl border border-[var(--line)]">
+        <div className="commons-card p-7 sm:p-8 bg-white rounded-2xl shadow-xl border border-slate-200/90">
           <div className="mb-6">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs bg-[color-mix(in_srgb,var(--accent)_12%,var(--surface))] border border-[var(--accent)] text-[var(--ink)] font-semibold mb-3">
-              <Sparkles className="w-3.5 h-3.5 text-[var(--accent)]" />
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs bg-indigo-50 border border-indigo-200 text-indigo-700 font-semibold mb-3">
+              <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
               <span>Participant Sign In</span>
             </div>
-            <h1 className="font-heading text-2xl sm:text-[26px] font-bold text-[var(--ink)] leading-snug">
+            <h1 className="font-heading text-2xl sm:text-[26px] font-bold text-slate-900 leading-snug">
               Sign In to Workspace
             </h1>
-            <p className="text-xs text-[var(--muted)] mt-1.5 leading-relaxed">
+            <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
               Enter your email address and password to access your team workspace.
             </p>
           </div>

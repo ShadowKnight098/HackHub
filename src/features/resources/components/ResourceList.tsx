@@ -33,15 +33,14 @@ export const ResourceList: React.FC = () => {
       {/* Header */}
       <motion.div variants={fadeUp} className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-heading text-[var(--ink)]">Resource Hub</h1>
-          <div className="title-rule" />
-          <p className="text-sm text-[var(--muted)]">
+          <h1 className="text-2xl sm:text-3xl font-heading font-bold text-slate-900 tracking-tight">Resource Hub</h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
             Verified artifacts, schema drafts, design systems, and external references.
           </p>
         </div>
 
         <button
-          className="commons-btn-primary shrink-0"
+          className="commons-btn-primary shrink-0 py-2 sm:py-2.5 px-4 text-xs sm:text-sm font-semibold flex items-center gap-1.5"
           onClick={() => setIsModalOpen(true)}
         >
           <Plus className="w-4 h-4" />
@@ -52,18 +51,18 @@ export const ResourceList: React.FC = () => {
       {/* Filters */}
       <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
         <div className="relative flex-1 sm:max-w-md">
-          <Search className="w-4 h-4 text-[var(--muted)] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             placeholder="Search resources, tags, or topics..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-9 py-2.5 text-sm rounded-lg border border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] placeholder:text-[var(--muted)] hover:border-[var(--accent)] focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] transition-colors shadow-2xs"
+            className="w-full pl-10 pr-9 py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 hover:border-indigo-400 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-colors shadow-xs"
           />
           {search && (
             <button
               onClick={() => setSearch('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-[var(--ink)] cursor-pointer"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -74,7 +73,7 @@ export const ResourceList: React.FC = () => {
           <select
             value={selectedVisibility}
             onChange={(e) => setSelectedVisibility(e.target.value)}
-            className="w-full appearance-none pl-3.5 pr-9 py-2.5 text-sm rounded-lg border border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] hover:border-[var(--accent)] focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] transition-colors cursor-pointer shadow-2xs"
+            className="w-full appearance-none pl-3.5 pr-9 py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-800 hover:border-indigo-400 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-colors cursor-pointer shadow-xs"
           >
             <option value="all">All Visibilities</option>
             <option value={Visibility.PUBLIC}>Public</option>
@@ -82,7 +81,7 @@ export const ResourceList: React.FC = () => {
             <option value={Visibility.TEAM}>Team Only</option>
             <option value={Visibility.PRIVATE}>Private (Uploader + Lead)</option>
           </select>
-          <ChevronDown className="w-4 h-4 text-[var(--muted)] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
         </div>
       </motion.div>
 
@@ -94,13 +93,13 @@ export const ResourceList: React.FC = () => {
       ) : filteredResources.length === 0 ? (
         <motion.div
           variants={fadeUp}
-          className="text-center py-20 rounded-[10px] border border-dashed border-[var(--line)] bg-[var(--surface)]"
+          className="text-center py-20 rounded-2xl border border-dashed border-slate-200 bg-white"
         >
-          <div className="w-12 h-12 rounded-full border border-[var(--line)] bg-[var(--bg)] flex items-center justify-center mx-auto mb-3">
-            <FolderGit2 className="w-6 h-6 text-[var(--muted)]" />
+          <div className="w-12 h-12 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center mx-auto mb-3 text-slate-400">
+            <FolderGit2 className="w-6 h-6" />
           </div>
-          <h3 className="font-heading text-lg text-[var(--ink)] mb-1">No resources found</h3>
-          <p className="text-xs text-[var(--muted)] max-w-sm mx-auto">
+          <h3 className="font-heading text-lg font-bold text-slate-900 mb-1">No resources found</h3>
+          <p className="text-xs text-slate-500 max-w-sm mx-auto">
             {search ? 'Try adjusting your search criteria.' : 'Share the first document or external link.'}
           </p>
         </motion.div>

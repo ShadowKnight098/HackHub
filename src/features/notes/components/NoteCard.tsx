@@ -56,8 +56,8 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note, index = 0 }) => {
 
             <div className="flex items-center gap-1.5 shrink-0">
               {note.isPinned && (
-                <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded border border-[var(--sun)] text-[var(--moss)] bg-[var(--surface)]">
-                  <Star className="w-2.5 h-2.5 text-[var(--moss)] fill-[var(--moss)]" />
+                <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-amber-200 text-amber-700 bg-amber-50">
+                  <Star className="w-2.5 h-2.5 text-amber-500 fill-amber-500" />
                   Pinned
                 </span>
               )}

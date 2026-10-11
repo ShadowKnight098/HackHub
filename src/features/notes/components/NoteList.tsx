@@ -33,7 +33,7 @@ export const NoteList: React.FC = () => {
         </div>
 
         <button
-          className="shrink-0 flex items-center gap-1.5 px-4 py-2 sm:px-4 sm:py-2.5 rounded-full text-xs sm:text-sm font-semibold text-white bg-[#FF2D78] hover:bg-[#E02669] shadow-[0_4px_14px_rgba(255,45,120,0.35)] active:scale-95 transition-all duration-200 cursor-pointer"
+          className="commons-btn-primary shrink-0 py-2 sm:py-2.5 px-4 text-xs sm:text-sm font-semibold flex items-center gap-1.5"
           onClick={() => setIsModalOpen(true)}
         >
           <Plus className="w-4 h-4 stroke-[2.5]" />

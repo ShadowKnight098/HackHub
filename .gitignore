@@ -68,3 +68,5 @@ Thumbs.db
 .supabase/
 *.local
 scratch/
+__pycache__/
+*.pyc

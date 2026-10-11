@@ -22,14 +22,13 @@ export const AdminDashboard: React.FC = () => {
 
   if (profile?.role !== UserRole.ADMIN) {
     return (
-      <div className="commons-card p-12 text-center max-w-lg mx-auto my-16 bg-[var(--surface)]">
-        <div className="w-12 h-12 rounded-full border border-[var(--sun)] bg-[color-mix(in_srgb,var(--sun)_18%,var(--surface))] flex items-center justify-center mx-auto mb-4 text-[var(--accent)]">
+      <div className="commons-card p-12 text-center max-w-lg mx-auto my-16 bg-white border border-slate-200">
+        <div className="w-12 h-12 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center mx-auto mb-4 text-amber-600">
           <ShieldAlert className="w-6 h-6" />
         </div>
-        <h2 className="font-heading text-2xl text-[var(--ink)]">Organizer Clearance Required</h2>
-        <div className="title-rule mx-auto" />
-        <p className="text-xs text-[var(--muted)] mt-2 max-w-sm mx-auto">
-          You are currently signed in as a <span className="capitalize text-[var(--accent)] font-semibold">{profile?.role || 'Guest'}</span>.
+        <h2 className="font-heading text-2xl font-bold text-slate-900">Organizer Clearance Required</h2>
+        <p className="text-xs text-slate-500 mt-2 max-w-sm mx-auto">
+          You are currently signed in as a <span className="capitalize text-indigo-600 font-semibold">{profile?.role || 'Guest'}</span>.
           Switch your role in your Profile to access administrative telemetry.
         </p>
         <button
@@ -48,9 +47,8 @@ export const AdminDashboard: React.FC = () => {
       {/* Header */}
       <motion.div variants={fadeUp} className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-heading text-[var(--ink)]">Director & Administration Log</h1>
-          <div className="title-rule" />
-          <p className="text-sm text-[var(--muted)]">
+          <h1 className="text-2xl sm:text-3xl font-heading font-bold text-slate-900 tracking-tight">Director & Administration Log</h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
             Cohort registry analytics, database RLS governance, and audit trails.
           </p>
         </div>
@@ -59,43 +57,43 @@ export const AdminDashboard: React.FC = () => {
       {/* Metrics Row */}
       <motion.div variants={stagger} className="grid grid-cols-1 md:grid-cols-3 gap-5">
         <motion.div variants={fadeUp}>
-          <div className="commons-card p-5 bg-[var(--surface)]">
+          <div className="commons-card p-5 bg-white border border-slate-200">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full border border-[var(--line)] bg-[var(--bg)] flex items-center justify-center text-[var(--ink)]">
-                <Users className="w-5 h-5 text-[var(--moss)]" />
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+                <Users className="w-5 h-5" />
               </div>
               <div>
-                <p className="font-accent italic text-xs text-[var(--muted)]">Registered Hackers</p>
-                <p className="font-fraunces text-2xl font-bold text-[var(--ink)] mt-0.5">128</p>
+                <p className="text-xs font-medium text-slate-500">Registered Hackers</p>
+                <p className="font-heading text-2xl font-bold text-slate-900 mt-0.5">128</p>
               </div>
             </div>
           </div>
         </motion.div>
 
         <motion.div variants={fadeUp}>
-          <div className="commons-card p-5 bg-[var(--surface)]">
+          <div className="commons-card p-5 bg-white border border-slate-200">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full border border-[var(--line)] bg-[var(--bg)] flex items-center justify-center text-[var(--ink)]">
-                <Activity className="w-5 h-5 text-[var(--sky)]" />
+              <div className="w-10 h-10 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600">
+                <Activity className="w-5 h-5" />
               </div>
               <div>
-                <p className="font-accent italic text-xs text-[var(--muted)]">Synchronized Sockets</p>
-                <p className="font-fraunces text-2xl font-bold text-[var(--ink)] mt-0.5">42 Connected</p>
+                <p className="text-xs font-medium text-slate-500">Synchronized Sockets</p>
+                <p className="font-heading text-2xl font-bold text-slate-900 mt-0.5">42 Connected</p>
               </div>
             </div>
           </div>
         </motion.div>
 
         <motion.div variants={fadeUp}>
-          <div className="commons-card p-5 bg-[var(--surface)]">
+          <div className="commons-card p-5 bg-white border border-slate-200">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full border border-[var(--line)] bg-[var(--bg)] flex items-center justify-center text-[var(--ink)]">
-                <Database className="w-5 h-5 text-[var(--accent)]" />
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
+                <Database className="w-5 h-5" />
               </div>
               <div>
-                <p className="font-accent italic text-xs text-[var(--muted)]">Postgres RLS Security</p>
-                <p className="text-xs font-semibold text-[var(--moss)] mt-1 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[var(--moss)]" />
+                <p className="text-xs font-medium text-slate-500">Postgres RLS Security</p>
+                <p className="text-xs font-semibold text-emerald-600 mt-1 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
                   Active Policy Enforcement
                 </p>
               </div>
@@ -106,10 +104,10 @@ export const AdminDashboard: React.FC = () => {
 
       {/* Audit Log Table */}
       <motion.div variants={fadeUp}>
-        <div className="commons-card overflow-hidden bg-[var(--surface)]">
-          <div className="px-6 py-4 border-b border-[var(--line)] flex justify-between items-center bg-[var(--bg)]">
-            <h3 className="font-heading text-sm text-[var(--ink)]">Security Audit Trail</h3>
-            <span className="font-accent italic text-xs text-[var(--muted)]">Append-only record</span>
+        <div className="commons-card overflow-hidden bg-white border border-slate-200">
+          <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+            <h3 className="font-heading text-sm font-bold text-slate-900">Security Audit Trail</h3>
+            <span className="text-xs font-mono text-slate-500">Append-only record</span>
           </div>
 
           <div className="overflow-x-auto">
@@ -118,9 +116,9 @@ export const AdminDashboard: React.FC = () => {
               classNames={{
                 base: 'bg-transparent',
                 table: 'bg-transparent',
-                thead: '[&>tr]:bg-[var(--bg)]',
-                th: 'bg-transparent text-[var(--muted)] text-xs font-semibold uppercase tracking-wider py-3 border-b border-[var(--line)] font-body',
-                td: 'py-3.5 border-b border-[var(--line)] text-[var(--ink)] font-body',
+                thead: '[&>tr]:bg-slate-50',
+                th: 'bg-transparent text-slate-500 text-xs font-semibold uppercase tracking-wider py-3 border-b border-slate-200 font-body',
+                td: 'py-3.5 border-b border-slate-100 text-slate-800 font-body',
               }}
             >
               <TableHeader>
@@ -133,15 +131,15 @@ export const AdminDashboard: React.FC = () => {
               <TableBody>
                 {MOCK_AUDIT_LOGS.map((log) => (
                   <TableRow key={log.id}>
-                    <TableCell className="text-xs font-mono text-[var(--muted)]">{log.timestamp}</TableCell>
-                    <TableCell className="text-xs font-medium text-[var(--ink)]">{log.actor}</TableCell>
+                    <TableCell className="text-xs font-mono text-slate-500">{log.timestamp}</TableCell>
+                    <TableCell className="text-xs font-medium text-slate-900">{log.actor}</TableCell>
                     <TableCell>
-                      <span className="inline-flex text-[10px] font-mono font-semibold px-2 py-0.5 rounded border border-[var(--sun)] text-[var(--moss)] bg-[var(--bg)]">
+                      <span className="inline-flex text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full border border-indigo-200 text-indigo-700 bg-indigo-50">
                         {log.action}
                       </span>
                     </TableCell>
-                    <TableCell className="text-xs font-mono text-[var(--sky)]">{log.entity}</TableCell>
-                    <TableCell className="text-xs text-[var(--ink)] font-medium">{log.target}</TableCell>
+                    <TableCell className="text-xs font-mono text-sky-600 font-medium">{log.entity}</TableCell>
+                    <TableCell className="text-xs text-slate-900 font-medium">{log.target}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

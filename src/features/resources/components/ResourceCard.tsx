@@ -86,7 +86,7 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({ resource }) => {
                   key={tag}
                   className="inline-flex items-center gap-0.5 text-[10px] px-2 py-0.5 rounded border border-[var(--line)] text-[var(--muted)] bg-[var(--bg)]"
                 >
-                  <Hash className="w-2.5 h-2.5 text-[var(--sun)]" />
+                  <Hash className="w-2.5 h-2.5 text-indigo-400" />
                   {tag}
                 </span>
               ))}
