@@ -56,7 +56,7 @@ export default {
       themes: {
         light: {
           colors: {
-            background: '#FFFFFF',
+            background: '#F0F0F0',
             foreground: '#191A23',
             default: {
               DEFAULT: '#191A23',
