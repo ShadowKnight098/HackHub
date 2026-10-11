@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import {
   Camera,
   Heart,
@@ -7,13 +7,9 @@ import {
   X,
   Upload,
   MapPin,
-  ChevronLeft,
-  ChevronRight,
-  CheckCircle2,
   RefreshCw,
   VideoOff,
   Sparkles,
-  Users,
 } from 'lucide-react';
 import {
   Modal,
@@ -26,15 +22,98 @@ import { useAuth } from '@/features/auth';
 import { useTeams } from '@/features/teams';
 import { storageService } from '@/services/storage';
 
+// ── DEFAULT GALLERY SEED SNAPSHOTS (EXACT MATCH TO USER REFERENCE) ──
+const DEFAULT_GALLERY_PHOTOS: SharedPhoto[] = [
+  {
+    id: 'gallery-1',
+    url: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=900',
+    title: 'Chatbots And Virtual Assistants',
+    caption: 'Keynote exploration into autonomous agent swarms, prompt engineering & LLM integration.',
+    teamName: 'AI Core Lab',
+    tableNumber: '4628 ROSE TOP CIR, ANCHORAGE',
+    uploadedBy: { name: 'Elena Vance' },
+    tags: ['INNOVATION'],
+    likes: 24,
+    likedByMe: false,
+    createdAt: '2026-10-10',
+  },
+  {
+    id: 'gallery-2',
+    url: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=900',
+    title: 'Modern Marketing Summit Sydney',
+    caption: 'Product-market fit breakdown, founder distribution loops, and user acquisition models.',
+    teamName: 'Growth Hacking Crew',
+    tableNumber: '4821 RIDE TOP, LEA MAN CITY',
+    uploadedBy: { name: 'Marcus Chen' },
+    tags: ['TECH SUMMIT'],
+    likes: 18,
+    likedByMe: true,
+    createdAt: '2026-11-06',
+  },
+  {
+    id: 'gallery-3',
+    url: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=900',
+    title: 'Registration For Opening Workshop',
+    caption: 'Full-house introductory kick-off, rules overview, and collaborative team pairings.',
+    teamName: 'Cohort Orientation',
+    tableNumber: '312 PARK AVE, NEW YORK',
+    uploadedBy: { name: 'Sofia Rodriguez' },
+    tags: ['WORKSHOP'],
+    likes: 31,
+    likedByMe: false,
+    createdAt: '2026-11-21',
+  },
+  {
+    id: 'gallery-4',
+    url: 'https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=900',
+    title: 'How Immersive is Revitalising The Cultural...',
+    caption: 'Interactive spatial computing, AR/VR human-computer interfaces, and live telemetry.',
+    teamName: 'Immersive Media',
+    tableNumber: '4628 ROSE TOP CIR, ANCHORAGE',
+    uploadedBy: { name: 'David Park' },
+    tags: ['RESEARCH'],
+    likes: 15,
+    likedByMe: false,
+    createdAt: '2026-11-20',
+  },
+  {
+    id: 'gallery-5',
+    url: 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=900',
+    title: 'Machine Learning Night Fastaily Part 2',
+    caption: 'High-throughput inference on edge GPUs, quantisation pipelines, and real-time vision.',
+    teamName: 'Neural Net Guild',
+    tableNumber: '2038 6TH AVE, KETCHIKAN',
+    uploadedBy: { name: 'Amara Okafor' },
+    tags: ['KEYNOTE'],
+    likes: 42,
+    likedByMe: true,
+    createdAt: '2026-11-14',
+  },
+  {
+    id: 'gallery-6',
+    url: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=900',
+    title: 'Our excellent partner France Pavilion',
+    caption: 'Global delegations, international exchange, and hardware demo exhibitions.',
+    teamName: 'Global Hackers',
+    tableNumber: '936 MICHAEL ST, ALL ANCHORAGE',
+    uploadedBy: { name: 'Julien Laurent' },
+    tags: ['CONFERENCE'],
+    likes: 29,
+    likedByMe: false,
+    createdAt: '2026-11-11',
+  },
+];
+
+const FILTER_TAGS = ['All', 'Innovation', 'Tech Summit', 'Workshop', 'Research', 'Keynote', 'Conference'];
+
 export const SharedPhotoGallery: React.FC = () => {
   const { profile } = useAuth();
   const { teams } = useTeams();
-  const [photos, setPhotos] = useState<SharedPhoto[]>([]);
-  const [selectedPhoto, setSelectedPhoto] = useState<SharedPhoto | null>(null);
-  const [isUploadOpen, setIsUploadOpen] = useState(false);
 
-  // 3D Perspective Carousel active index state
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [dynamicPhotos, setDynamicPhotos] = useState<SharedPhoto[]>([]);
+  const [selectedPhoto, setSelectedPhoto] = useState<SharedPhoto | null>(null);
+  const [selectedTag, setSelectedTag] = useState('All');
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
 
   // Upload & Camera state
   const [captureMode, setCaptureMode] = useState<'camera' | 'upload'>('camera');
@@ -44,24 +123,14 @@ export const SharedPhotoGallery: React.FC = () => {
   const [cameraFacing, setCameraFacing] = useState<'user' | 'environment'>('environment');
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [isFlashing, setIsFlashing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  // Responsive state for mobile vs desktop perspective sizing
-  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 640);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 640);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // Automatically detect user's team & location
+  // User's team & location
   const myTeam = profile
     ? teams.find((t) => t.members.some((m) => m.userId === profile.id))
     : null;
@@ -73,14 +142,23 @@ export const SharedPhotoGallery: React.FC = () => {
     : cachedLoc?.name || 'Main Venue Floor';
 
   const loadPhotos = useCallback(() => {
-    // Only load dynamic user snapshots
     const stored = db.photos.getAll();
-    setPhotos(stored);
+    setDynamicPhotos(stored);
   }, []);
 
   useEffect(() => {
     loadPhotos();
   }, [loadPhotos]);
+
+  // Combined photo list (dynamic photos first, then reference seed photos)
+  const allPhotos = [...dynamicPhotos, ...DEFAULT_GALLERY_PHOTOS];
+
+  // Filtered photos
+  const filteredPhotos = allPhotos.filter((photo) => {
+    if (selectedTag === 'All') return true;
+    const tag = photo.tags?.[0]?.toUpperCase() || '';
+    return tag.includes(selectedTag.toUpperCase());
+  });
 
   // Stop camera helper
   const stopCamera = useCallback(() => {
@@ -94,7 +172,7 @@ export const SharedPhotoGallery: React.FC = () => {
     setIsCameraActive(false);
   }, []);
 
-  // Start live camera viewfinder
+  // Start live camera
   const startCamera = useCallback(async (facing: 'user' | 'environment' = 'environment') => {
     stopCamera();
     setCameraError(null);
@@ -168,7 +246,6 @@ export const SharedPhotoGallery: React.FC = () => {
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
-
     const width = video.videoWidth || 640;
     const height = video.videoHeight || 480;
 
@@ -208,7 +285,7 @@ export const SharedPhotoGallery: React.FC = () => {
     e.stopPropagation();
     const updated = db.photos.toggleLike(id);
     if (updated) {
-      setPhotos((prev) =>
+      setDynamicPhotos((prev) =>
         prev.map((p) =>
           p.id === id ? { ...p, likes: updated.likes, likedByMe: updated.likedByMe } : p
         )
@@ -217,20 +294,18 @@ export const SharedPhotoGallery: React.FC = () => {
         setSelectedPhoto({ ...selectedPhoto, likes: updated.likes, likedByMe: updated.likedByMe });
       }
     } else {
-      // Local toggle for sample photos
-      setPhotos((prev) =>
-        prev.map((p) => {
-          if (p.id === id) {
-            const liked = !p.likedByMe;
-            return {
-              ...p,
-              likedByMe: liked,
-              likes: liked ? p.likes + 1 : Math.max(0, p.likes - 1),
-            };
-          }
-          return p;
-        })
-      );
+      // Toggle seed photo like locally
+      if (selectedPhoto && selectedPhoto.id === id) {
+        setSelectedPhoto((prev) =>
+          prev
+            ? {
+                ...prev,
+                likedByMe: !prev.likedByMe,
+                likes: prev.likedByMe ? prev.likes - 1 : prev.likes + 1,
+              }
+            : null
+        );
+      }
     }
   };
 
@@ -247,370 +322,159 @@ export const SharedPhotoGallery: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  const [isUploading, setIsUploading] = useState(false);
-
   const handleCreatePhoto = async () => {
     if (!newUrl.trim() || isUploading) return;
 
     setIsUploading(true);
     try {
-      // 1. Upload photo to Supabase Storage Bucket ('gallery')
       const publicBucketUrl = await storageService.uploadImage(newUrl, 'gallery', 'photos');
 
       const created: SharedPhoto = {
         id: `photo-${Date.now()}`,
         url: publicBucketUrl,
         title: newTitle.trim() || `${autoTeam} Prototype`,
-        caption: '',
+        caption: `Captured live at ${autoLocation}`,
         teamName: autoTeam,
         tableNumber: autoLocation,
         uploadedBy: {
           name: profile?.fullName || 'Participant',
           avatarUrl: profile?.avatarUrl || undefined,
         },
-        tags: ['Live'],
+        tags: ['LIVE DEMO'],
         likes: 1,
         likedByMe: true,
-        createdAt: new Date().toISOString(),
+        createdAt: new Date().toISOString().slice(0, 10),
       };
 
       db.photos.insert(created);
-      setPhotos((prev) => [created, ...prev]);
-      setActiveIndex(0);
+      setDynamicPhotos((prev) => [created, ...prev]);
       closeModal();
     } catch (uploadErr) {
-      console.warn('Failed to upload photo to storage bucket:', uploadErr);
+      console.warn('Failed to upload photo:', uploadErr);
     } finally {
       setIsUploading(false);
     }
   };
 
-  // Carousel navigation handlers
-  const totalPhotos = photos.length;
-  const handlePrev = useCallback(() => {
-    if (totalPhotos <= 1) return;
-    setActiveIndex((prev) => (prev - 1 + totalPhotos) % totalPhotos);
-  }, [totalPhotos]);
-
-  const handleNext = useCallback(() => {
-    if (totalPhotos <= 1) return;
-    setActiveIndex((prev) => (prev + 1) % totalPhotos);
-  }, [totalPhotos]);
-
-  // Keyboard navigation
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (isUploadOpen || selectedPhoto) return;
-      if (e.key === 'ArrowLeft') handlePrev();
-      if (e.key === 'ArrowRight') handleNext();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handlePrev, handleNext, isUploadOpen, selectedPhoto]);
-
   return (
-    <div className="commons-card p-5 sm:p-7 flex flex-col gap-5 overflow-hidden">
+    <div className="commons-card p-6 sm:p-8 bg-white flex flex-col gap-6">
       {/* Hidden offscreen canvas for frame capture */}
       <canvas ref={canvasRef} className="hidden" />
 
-      {/* ── HEADER ──────────────────────────────────────────────── */}
+      {/* ── HEADER & ACTIONS ────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b-[1.5px] border-[#191A23]">
         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
           <span className="tag-highlight font-heading text-lg sm:text-xl font-bold">
-            Team Photo Stream
+            Image Gallery
           </span>
           <p className="text-xs text-[#6B7280]">
-            Live cohort camera stream & workbench prototypes
+            Keynote sessions, cohort milestones & team prototypes
           </p>
         </div>
 
         <div className="flex items-center gap-2.5 shrink-0">
-          {/* Quick Direct Camera Button */}
           <button
             onClick={() => openModal('camera')}
             className="commons-btn-primary py-2 px-3.5 text-xs flex items-center gap-1.5 cursor-pointer"
             title="Take photo directly from your camera"
           >
             <Camera className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Take Photo</span>
+            <span className="hidden sm:inline">Snap Photo</span>
             <span className="sm:hidden">Camera</span>
           </button>
 
-          {/* Post from File Button */}
           <button
             onClick={() => openModal('upload')}
             className="commons-btn-secondary py-2 px-3 text-xs flex items-center gap-1 cursor-pointer"
             title="Upload photo from disk"
           >
             <Upload className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Upload</span>
+            <span>Upload</span>
           </button>
         </div>
       </div>
 
-      {/* ── 3D PERSPECTIVE COVER FLOW CAROUSEL (EXACT REFERENCE MATCH) ── */}
-      <div className="relative w-full py-4 sm:py-6 overflow-hidden flex flex-col items-center select-none">
-        {totalPhotos === 0 ? (
-          <div className="w-full py-16 px-4 flex flex-col items-center justify-center text-center rounded-[24px] border border-dashed border-[var(--line)] bg-[var(--surface)]/40">
-            <div className="w-14 h-14 rounded-2xl bg-[var(--bg)] border border-[var(--line)] flex items-center justify-center mb-3 shadow-inner">
-              <Camera className="w-7 h-7 text-[var(--accent)]" />
-            </div>
-            <h3 className="font-heading text-base font-bold text-[var(--ink)] mb-1">
-              No team snapshots posted yet
-            </h3>
-            <p className="text-xs text-[var(--muted)] max-w-sm mb-4 leading-relaxed">
-              Snap your prototype, workbench rig, or team huddle to start the live cohort stream!
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => openModal('camera')}
-                className="commons-btn-primary py-2 px-4 text-xs flex items-center gap-1.5 cursor-pointer"
-              >
-                <Camera className="w-3.5 h-3.5" />
-                <span>Snap First Photo</span>
-              </button>
-              <button
-                onClick={() => openModal('upload')}
-                className="commons-btn-secondary py-2 px-3 text-xs flex items-center gap-1 cursor-pointer"
-              >
-                <Upload className="w-3.5 h-3.5" />
-                <span>Upload Image</span>
-              </button>
-            </div>
-          </div>
-        ) : (
-          <>
-            {/* Perspective Stage Container with touch swipe support */}
-            <div className="relative w-full h-[370px] sm:h-[420px] md:h-[460px] flex items-center justify-center touch-pan-y">
-          {photos.map((photo, index) => {
-            // Calculate circular offset relative to active card
-            let offset = index - activeIndex;
-            const half = Math.floor(totalPhotos / 2);
-            while (offset > half) offset -= totalPhotos;
-            while (offset < -half) offset += totalPhotos;
-
-            const isCenter = offset === 0;
-            const isNear = Math.abs(offset) <= 2;
-
-            if (!isNear) return null;
-
-            // Compute responsive perspective translations (tight on mobile, spacious on desktop)
-            const step1 = isMobile ? 135 : 190;
-            const step2 = isMobile ? 230 : 320;
-
-            let xPos = 0;
-            let scale = 1;
-            let zIndex = 20;
-            let opacity = 1;
-            let brightness = 1;
-
-            if (offset === 0) {
-              xPos = 0;
-              scale = isMobile ? 1.02 : 1.05;
-              zIndex = 30;
-              opacity = 1;
-              brightness = 1;
-            } else if (offset === -1) {
-              xPos = -step1;
-              scale = 0.88;
-              zIndex = 20;
-              opacity = 0.85;
-              brightness = 0.85;
-            } else if (offset === 1) {
-              xPos = step1;
-              scale = 0.88;
-              zIndex = 20;
-              opacity = 0.85;
-              brightness = 0.85;
-            } else if (offset === -2) {
-              xPos = -step2;
-              scale = 0.74;
-              zIndex = 10;
-              opacity = 0.4;
-              brightness = 0.7;
-            } else if (offset === 2) {
-              xPos = step2;
-              scale = 0.74;
-              zIndex = 10;
-              opacity = 0.4;
-              brightness = 0.7;
-            }
-
-            return (
-              <motion.div
-                key={photo.id}
-                drag={isCenter ? 'x' : false}
-                dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={0.2}
-                onDragEnd={(_e, info) => {
-                  if (info.offset.x < -40 || info.velocity.x < -300) {
-                    handleNext();
-                  } else if (info.offset.x > 40 || info.velocity.x > 300) {
-                    handlePrev();
-                  }
-                }}
-                animate={{
-                  x: xPos,
-                  scale,
-                  zIndex,
-                  opacity,
-                  filter: `brightness(${brightness})`,
-                }}
-                transition={{
-                  type: 'spring',
-                  stiffness: 280,
-                  damping: 28,
-                }}
-                onClick={() => {
-                  if (isCenter) {
-                    setSelectedPhoto(photo);
-                  } else {
-                    setActiveIndex(index);
-                  }
-                }}
-                className={`absolute w-[215px] sm:w-[280px] md:w-[320px] aspect-[3/4] rounded-[24px] sm:rounded-[28px] overflow-hidden cursor-grab active:cursor-grabbing group shadow-2xl transition-shadow select-none border-[1.5px] border-[#191A23] ${
-                  isCenter ? 'ring-2 ring-[#B9FF66] shadow-[0_12px_0_#191A23]' : 'shadow-[0_6px_0_#191A23]'
-                }`}
-                style={{
-                  transformOrigin: 'center center',
-                }}
-              >
-                {/* Background Image */}
-                <img
-                  src={photo.url}
-                  alt={photo.teamName || 'Snapshot'}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src =
-                      'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800';
-                  }}
-                />
-
-                {/* Subtle top shade */}
-                <div className="absolute top-0 inset-x-0 h-16 bg-gradient-to-b from-black/40 to-transparent pointer-events-none" />
-
-                {/* Top Live Badge */}
-                <div className="absolute top-3.5 left-3.5 px-2.5 py-0.5 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-[10px] text-white font-medium flex items-center gap-1.5 shadow-sm">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>Cohort Live</span>
-                </div>
-
-                {/* ── FROSTED GLASS BLUR OVERLAY ON BOTTOM (MATCHING REQUEST) ── */}
-                <div className="absolute bottom-0 inset-x-0 p-3 sm:p-4.5 backdrop-blur-xl bg-black/60 dark:bg-black/75 border-t border-white/20 text-white rounded-b-[24px] sm:rounded-b-[28px] flex flex-col gap-1.5 sm:gap-2">
-                  {/* Top Row: Team Name & Location Badge */}
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="min-w-0 flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-[10px] font-bold text-white shrink-0 border border-white/20">
-                        {photo.teamName?.[0] || 'T'}
-                      </div>
-                      <h3 className="font-heading text-sm sm:text-base font-bold text-white truncate drop-shadow-sm">
-                        {photo.teamName}
-                      </h3>
-                    </div>
-
-                    {/* Location Info Pill */}
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/25 text-white text-[10px] sm:text-[11px] font-mono shrink-0 shadow-xs">
-                      <MapPin className="w-3 h-3 text-[var(--sun)]" />
-                      <span>{photo.tableNumber || 'Floor Area'}</span>
-                    </div>
-                  </div>
-
-                  {/* Bottom Row: Tagline / Caption & Likes */}
-                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-white/10 text-xs">
-                    <p className="text-white/85 text-[10px] sm:text-xs truncate max-w-[130px] sm:max-w-[200px]">
-                      {photo.title || `Snapshot by ${photo.uploadedBy.name}`}
-                    </p>
-
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        onClick={(e) => handleToggleLike(photo.id, e)}
-                        className={`flex items-center gap-1 px-2 py-0.5 rounded-full backdrop-blur-md transition-all cursor-pointer ${
-                          photo.likedByMe
-                            ? 'bg-[var(--accent)] text-white'
-                            : 'bg-white/15 text-white/90 hover:bg-white/25'
-                        }`}
-                        title="Like snapshot"
-                      >
-                        <Heart className={`w-3 h-3 ${photo.likedByMe ? 'fill-current text-white' : ''}`} />
-                        <span className="font-mono text-[10px] sm:text-[11px]">{photo.likes}</span>
-                      </button>
-
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedPhoto(photo);
-                        }}
-                        className="p-1 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all cursor-pointer"
-                        title="Expand view"
-                      >
-                        <Maximize2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-
-        {/* ── CAROUSEL BOTTOM CONTROLS (CIRCULAR ARROWS MATCHING IMAGE) ── */}
-        <div className="w-full flex items-center justify-between mt-5 px-3 max-w-xl">
-          {/* Left Slide Count */}
-          <div className="text-xs text-[var(--muted)] font-mono min-w-12">
-            {totalPhotos > 0 ? `${activeIndex + 1} / ${totalPhotos}` : '0 / 0'}
-          </div>
-
-          {/* Centered Minimalist Circular Arrow Controls */}
-          <div className="flex items-center gap-2 sm:gap-3 mx-auto">
-            <button
-              onClick={handlePrev}
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] hover:border-[var(--accent)] hover:text-[var(--accent)] flex items-center justify-center transition-all shadow-sm active:scale-95 cursor-pointer group"
-              title="Previous photo (←)"
-              aria-label="Previous photo"
-            >
-              <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
-            </button>
-
-            {/* Slide Navigation Dots */}
-            <div className="flex items-center gap-1.5 px-1 sm:px-2">
-              {photos.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setActiveIndex(i)}
-                  className={`transition-all rounded-full cursor-pointer ${
-                    i === activeIndex
-                      ? 'w-4 sm:w-5 h-2 bg-[var(--accent)]'
-                      : 'w-2 h-2 bg-[var(--line)] hover:bg-[var(--muted)]'
-                  }`}
-                  aria-label={`Go to slide ${i + 1}`}
-                />
-              ))}
-            </div>
-
-            <button
-              onClick={handleNext}
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] hover:border-[var(--accent)] hover:text-[var(--accent)] flex items-center justify-center transition-all shadow-sm active:scale-95 cursor-pointer group"
-              title="Next photo (→)"
-              aria-label="Next photo"
-            >
-              <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-            </button>
-          </div>
-
-          {/* Right Expand / Fullscreen Button */}
+      {/* ── FILTER CHIPS ────────────────────────────────────────── */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+        {FILTER_TAGS.map((tag) => (
           <button
-            onClick={() => {
-              if (photos[activeIndex]) setSelectedPhoto(photos[activeIndex]);
-            }}
-            className="p-2 sm:p-2.5 rounded-full border border-[var(--line)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--ink)] hover:border-[var(--accent)] transition-all shadow-sm cursor-pointer"
-            title="Open lightbox view"
+            key={tag}
+            onClick={() => setSelectedTag(tag)}
+            className={`px-3.5 py-1.5 rounded-[12px] text-xs font-bold whitespace-nowrap transition-all cursor-pointer border-[1.5px] border-[#191A23] ${
+              selectedTag === tag
+                ? 'bg-[#191A23] text-[#B9FF66] shadow-[0_3px_0_#191A23]'
+                : 'bg-white text-[#191A23] hover:bg-[#F3F3F3]'
+            }`}
           >
-            <Maximize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            {tag}
           </button>
-        </div>
-      </>
-    )}
-  </div>
+        ))}
+      </div>
+
+      {/* ── IMAGE GALLERY GRID (MATCHING USER REFERENCE LAYOUT) ──── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7">
+        {filteredPhotos.map((photo) => (
+          <div
+            key={photo.id}
+            onClick={() => setSelectedPhoto(photo)}
+            className="flex flex-col group cursor-pointer"
+          >
+            {/* Cover image container */}
+            <div className="relative aspect-[16/10] w-full rounded-[22px] overflow-hidden bg-[#F3F3F3] border-[1.5px] border-[#191A23] shadow-[0_4px_0_#191A23] group-hover:shadow-[0_6px_0_#191A23] group-hover:-translate-y-0.5 transition-all">
+              <img
+                src={photo.url}
+                alt={photo.title}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src =
+                    'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800';
+                }}
+              />
+
+              {/* Top hover quick actions */}
+              <div className="absolute top-3 right-3 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={(e) => handleToggleLike(photo.id, e)}
+                  className="w-8 h-8 rounded-full bg-white/95 backdrop-blur-md border border-[#191A23] text-[#191A23] flex items-center justify-center hover:bg-[#B9FF66] transition-colors shadow-sm cursor-pointer"
+                  title="Like photo"
+                >
+                  <Heart className={`w-3.5 h-3.5 ${photo.likedByMe ? 'fill-[#E11D48] text-[#E11D48]' : ''}`} />
+                </button>
+                <div
+                  className="w-8 h-8 rounded-full bg-white/95 backdrop-blur-md border border-[#191A23] text-[#191A23] flex items-center justify-center hover:bg-[#B9FF66] transition-colors shadow-sm"
+                  title="View fullscreen"
+                >
+                  <Maximize2 className="w-3.5 h-3.5" />
+                </div>
+              </div>
+            </div>
+
+            {/* Text Details below image */}
+            <div className="flex flex-col mt-3.5">
+              {/* Pill & Date row */}
+              <div className="flex items-center gap-2.5">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-[#4F46E5] text-white">
+                  {photo.tags?.[0] || 'KEYNOTE'}
+                </span>
+                <span className="text-xs font-mono text-[#9CA3AF]">
+                  {photo.createdAt?.slice(0, 10) || '2026-10-11'}
+                </span>
+              </div>
+
+              {/* Title */}
+              <h3 className="font-heading font-bold text-base sm:text-lg text-[#191A23] leading-snug line-clamp-2 mt-2 group-hover:underline">
+                {photo.title}
+              </h3>
+
+              {/* Location */}
+              <div className="flex items-center gap-1.5 text-xs text-[#E11D48] font-mono font-semibold uppercase tracking-wider mt-1.5">
+                <MapPin className="w-3.5 h-3.5 shrink-0 text-[#E11D48]" />
+                <span className="truncate">{photo.tableNumber || '4628 ROSE TOP CIR, ANCHORAGE'}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
 
       {/* ── LIGHTBOX ZOOM MODAL ─────────────────────────────────── */}
       <AnimatePresence>
@@ -622,56 +486,59 @@ export const SharedPhotoGallery: React.FC = () => {
             backdrop="blur"
             placement="center"
             classNames={{
-              base: 'border border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] shadow-2xl rounded-2xl overflow-hidden',
-              header: 'border-b border-[var(--line)] px-5 py-3.5 flex items-center justify-between',
+              base: 'border-[1.5px] border-[#191A23] bg-white text-[#191A23] shadow-2xl rounded-[28px] overflow-hidden',
+              header: 'border-b-[1.5px] border-[#191A23] px-6 py-4 flex items-center justify-between bg-[#F3F3F3]',
               body: 'p-0',
-              footer: 'border-t border-[var(--line)] px-5 py-3.5 bg-[var(--bg)]',
+              footer: 'border-t-[1.5px] border-[#191A23] px-6 py-4 bg-white',
             }}
           >
             <ModalContent>
               <ModalHeader>
-                <div className="flex items-center gap-2.5">
-                  <div className="w-6 h-6 rounded-full bg-[var(--accent)] text-white text-[10px] font-bold flex items-center justify-center">
-                    {selectedPhoto.teamName?.[0] || 'T'}
-                  </div>
-                  <h3 className="font-heading text-base text-[var(--ink)]">
-                    {selectedPhoto.teamName}
-                  </h3>
-                  <span className="text-[11px] font-mono text-[var(--muted)] flex items-center gap-1 ml-1">
-                    <MapPin className="w-3 h-3 text-[var(--accent)]" />
-                    {selectedPhoto.tableNumber}
+                <div className="flex items-center gap-3">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-[#4F46E5] text-white">
+                    {selectedPhoto.tags?.[0] || 'PHOTO'}
                   </span>
+                  <h3 className="font-heading text-base font-bold text-[#191A23]">
+                    {selectedPhoto.title}
+                  </h3>
                 </div>
               </ModalHeader>
 
               <ModalBody>
-                <div className="relative max-h-[70vh] bg-black/95 flex items-center justify-center overflow-hidden">
+                <div className="relative max-h-[70vh] bg-[#191A23] flex items-center justify-center overflow-hidden">
                   <img
                     src={selectedPhoto.url}
-                    alt={selectedPhoto.teamName}
+                    alt={selectedPhoto.title}
                     className="max-h-[70vh] w-auto object-contain mx-auto"
                   />
                 </div>
 
-                <div className="p-4 flex items-center justify-between text-xs border-t border-[var(--line)] bg-[var(--surface)]">
+                <div className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs border-t-[1.5px] border-[#191A23] bg-white">
                   <div>
-                    <span className="text-[var(--ink)] font-semibold block">
+                    <span className="text-[#191A23] font-bold text-sm block">
                       {selectedPhoto.title}
                     </span>
-                    <span className="text-[11px] text-[var(--muted)]">
-                      Captured by {selectedPhoto.uploadedBy.name}
-                    </span>
+                    <div className="flex items-center gap-2 mt-1 text-xs text-[#E11D48] font-mono font-semibold">
+                      <MapPin className="w-3.5 h-3.5" />
+                      <span>{selectedPhoto.tableNumber}</span>
+                      <span className="text-[#9CA3AF]">• {selectedPhoto.createdAt?.slice(0, 10)}</span>
+                    </div>
+                    {selectedPhoto.caption && (
+                      <p className="text-xs text-[#6B7280] mt-1.5 leading-relaxed">
+                        {selectedPhoto.caption}
+                      </p>
+                    )}
                   </div>
 
                   <button
                     onClick={(e) => handleToggleLike(selectedPhoto.id, e)}
-                    className="commons-btn-secondary py-1 px-3 flex items-center gap-1.5 text-xs cursor-pointer"
+                    className="commons-btn-secondary py-1.5 px-3.5 flex items-center gap-2 text-xs cursor-pointer self-start sm:self-auto shrink-0"
                   >
                     <Heart
-                      className={`w-3.5 h-3.5 ${
+                      className={`w-4 h-4 ${
                         selectedPhoto.likedByMe
-                          ? 'text-[var(--accent)] fill-current'
-                          : 'text-[var(--muted)]'
+                          ? 'text-[#E11D48] fill-[#E11D48]'
+                          : 'text-[#6B7280]'
                       }`}
                     />
                     <span>{selectedPhoto.likes} Likes</span>
@@ -692,28 +559,28 @@ export const SharedPhotoGallery: React.FC = () => {
         placement="center"
         hideCloseButton
         classNames={{
-          base: 'border border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] rounded-[24px] shadow-2xl overflow-hidden',
+          base: 'border-[1.5px] border-[#191A23] bg-white text-[#191A23] rounded-[28px] shadow-2xl overflow-hidden',
         }}
       >
         <ModalContent>
           <ModalBody className="p-6 sm:p-8 flex flex-col gap-5">
             {/* Top Indicator & Close */}
-            <div className="flex justify-between items-center text-xs font-semibold text-[var(--muted)]">
-              <span className="flex items-center gap-1.5 text-[var(--moss)]">
-                <Sparkles className="w-3.5 h-3.5 text-[var(--accent)]" />
-                Live Snapshot Stream
+            <div className="flex justify-between items-center text-xs font-semibold text-[#6B7280]">
+              <span className="tag-highlight text-[11px] font-mono uppercase">
+                <Sparkles className="w-3.5 h-3.5" />
+                Live Photo Capture
               </span>
               <button
                 onClick={closeModal}
-                className="text-[var(--muted)] hover:text-[var(--ink)] transition-colors p-1 -mr-1 cursor-pointer"
+                className="text-[#191A23] hover:opacity-75 transition-opacity p-1 -mr-1 cursor-pointer"
                 aria-label="Close modal"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Mode Switcher Tabs */}
-            <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-[var(--bg)] border border-[var(--line)]">
+            <div className="grid grid-cols-2 gap-2 p-1.5 rounded-xl bg-[#F3F3F3] border-[1.5px] border-[#191A23]">
               <button
                 type="button"
                 onClick={() => {
@@ -721,10 +588,10 @@ export const SharedPhotoGallery: React.FC = () => {
                   setNewUrl('');
                   startCamera(cameraFacing);
                 }}
-                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   captureMode === 'camera'
-                    ? 'bg-[var(--surface)] text-[var(--accent)] shadow-xs border border-[var(--line)]'
-                    : 'text-[var(--muted)] hover:text-[var(--ink)]'
+                    ? 'bg-[#191A23] text-[#B9FF66] shadow-[0_2px_0_#191A23]'
+                    : 'text-[#6B7280] hover:text-[#191A23]'
                 }`}
               >
                 <Camera className="w-4 h-4" />
@@ -736,10 +603,10 @@ export const SharedPhotoGallery: React.FC = () => {
                   setCaptureMode('upload');
                   stopCamera();
                 }}
-                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   captureMode === 'upload'
-                    ? 'bg-[var(--surface)] text-[var(--accent)] shadow-xs border border-[var(--line)]'
-                    : 'text-[var(--muted)] hover:text-[var(--ink)]'
+                    ? 'bg-[#191A23] text-[#B9FF66] shadow-[0_2px_0_#191A23]'
+                    : 'text-[#6B7280] hover:text-[#191A23]'
                 }`}
               >
                 <Upload className="w-4 h-4" />
@@ -747,138 +614,146 @@ export const SharedPhotoGallery: React.FC = () => {
               </button>
             </div>
 
-            {/* Auto-detected Team & Location Pills */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-[var(--muted)]">Tagging:</span>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs bg-[color-mix(in_srgb,var(--accent)_12%,var(--surface))] border border-[var(--accent)] text-[var(--ink)] font-semibold shadow-xs">
-                <Users className="w-3.5 h-3.5 text-[var(--moss)]" />
-                <span>{autoTeam}</span>
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 ml-0.5" />
-              </div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs bg-[var(--surface)] border border-[var(--line)] text-[var(--ink)] font-medium">
-                <MapPin className="w-3.5 h-3.5 text-[var(--accent)]" />
-                <span>{autoLocation}</span>
-              </div>
-            </div>
+            {/* Mode 1: Live Camera Viewfinder */}
+            {captureMode === 'camera' && (
+              <div className="flex flex-col gap-3">
+                <div className="relative aspect-[4/3] rounded-[20px] overflow-hidden bg-black border-[1.5px] border-[#191A23] flex items-center justify-center shadow-inner">
+                  {isFlashing && (
+                    <div className="absolute inset-0 bg-white z-30 pointer-events-none animate-ping" />
+                  )}
 
-            {/* ── PHOTO CAPTURE / PREVIEW AREA ───────────────────── */}
-            {newUrl ? (
-              <div className="relative aspect-video rounded-2xl overflow-hidden border border-[var(--line)] bg-black/90 shadow-inner group">
-                <img src={newUrl} alt="Preview" className="w-full h-full object-contain" />
-                <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-auto">
-                  <span className="px-2.5 py-1 rounded-full bg-black/70 text-white text-[11px] backdrop-blur-md">
-                    Snapshot Ready
-                  </span>
-                  <button
-                    type="button"
-                    onClick={retakePhoto}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-[var(--surface)]/95 hover:bg-[var(--surface)] text-[var(--ink)] text-xs font-medium border border-[var(--line)] shadow-md cursor-pointer transition-transform hover:scale-105"
-                  >
-                    <RefreshCw className="w-3 h-3 text-[var(--accent)]" />
-                    <span>Retake</span>
-                  </button>
-                </div>
-              </div>
-            ) : captureMode === 'camera' ? (
-              <div className="relative aspect-video rounded-2xl overflow-hidden border-2 border-[var(--line)] bg-zinc-950 flex flex-col justify-between p-3.5 shadow-inner">
-                {isFlashing && (
-                  <div className="absolute inset-0 bg-white z-30 transition-opacity duration-150 pointer-events-none" />
-                )}
+                  {!newUrl && (
+                    <video
+                      ref={videoRef}
+                      playsInline
+                      muted
+                      autoPlay
+                      className={`w-full h-full object-cover ${
+                        cameraFacing === 'user' ? 'scale-x-[-1]' : ''
+                      }`}
+                    />
+                  )}
 
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className={`absolute inset-0 w-full h-full object-cover ${
-                    cameraFacing === 'user' ? '-scale-x-100' : ''
-                  }`}
-                />
+                  {newUrl && (
+                    <img
+                      src={newUrl}
+                      alt="Captured snapshot"
+                      className="w-full h-full object-cover"
+                    />
+                  )}
 
-                <div className="relative z-10 flex items-center justify-between w-full">
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[11px] text-white font-medium">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>Live Lens</span>
-                  </div>
+                  {cameraError && !newUrl && (
+                    <div className="absolute inset-0 p-6 flex flex-col items-center justify-center text-center bg-black/85 text-white gap-2">
+                      <VideoOff className="w-8 h-8 text-rose-400" />
+                      <p className="text-xs text-rose-300 font-mono max-w-xs">{cameraError}</p>
+                      <button
+                        type="button"
+                        onClick={() => openModal('upload')}
+                        className="commons-btn-primary py-1.5 px-3 text-xs mt-2"
+                      >
+                        Switch to File Upload
+                      </button>
+                    </div>
+                  )}
 
-                  <button
-                    type="button"
-                    onClick={toggleCameraFacing}
-                    className="p-2 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/15 text-white transition-all cursor-pointer"
-                    title="Flip camera"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                <div className="absolute inset-8 pointer-events-none border border-white/20 rounded-xl" />
-
-                <div className="relative z-10 flex items-center justify-center w-full">
-                  <button
-                    type="button"
-                    onClick={snapPhoto}
-                    disabled={!isCameraActive}
-                    className="group flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-white/95 hover:bg-white text-zinc-900 font-semibold text-xs shadow-xl transition-all hover:scale-105 active:scale-95 cursor-pointer disabled:opacity-40"
-                    title="Snap photo from camera"
-                  >
-                    <span className="w-3.5 h-3.5 rounded-full bg-[var(--accent)] group-hover:scale-110 transition-transform" />
-                    <span>Snap Photo</span>
-                  </button>
-                </div>
-
-                {cameraError && (
-                  <div className="absolute inset-0 z-20 bg-zinc-950/90 flex flex-col items-center justify-center p-6 text-center text-white">
-                    <VideoOff className="w-8 h-8 text-[var(--accent)] mb-2" />
-                    <p className="text-xs text-zinc-300 max-w-xs mb-3">{cameraError}</p>
+                  {isCameraActive && !newUrl && (
                     <button
                       type="button"
-                      onClick={() => setCaptureMode('upload')}
-                      className="px-4 py-1.5 rounded-lg bg-[var(--accent)] text-white text-xs font-semibold cursor-pointer"
+                      onClick={toggleCameraFacing}
+                      className="absolute top-3 right-3 p-2 rounded-full bg-black/60 text-white backdrop-blur-md border border-white/20 hover:bg-black/80 transition-all cursor-pointer shadow-md"
+                      title="Flip camera"
                     >
-                      Upload File Instead
+                      <RefreshCw className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-center gap-3">
+                  {!newUrl ? (
+                    <button
+                      type="button"
+                      onClick={snapPhoto}
+                      disabled={!isCameraActive}
+                      className="commons-btn-primary py-3 px-6 text-sm flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                    >
+                      <Camera className="w-4 h-4" />
+                      <span>Take Snapshot</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={retakePhoto}
+                      className="commons-btn-secondary py-2 px-4 text-xs flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Retake Photo</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Mode 2: File Picker */}
+            {captureMode === 'upload' && (
+              <div className="flex flex-col gap-3">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+
+                {!newUrl ? (
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="aspect-[4/3] rounded-[20px] border-2 border-dashed border-[#191A23] bg-[#F3F3F3] hover:bg-white flex flex-col items-center justify-center p-6 text-center cursor-pointer transition-all group"
+                  >
+                    <div className="w-12 h-12 rounded-2xl border-[1.5px] border-[#191A23] bg-white flex items-center justify-center mb-3 shadow-[0_2px_0_#191A23] group-hover:scale-105 transition-transform">
+                      <Upload className="w-6 h-6 text-[#191A23]" />
+                    </div>
+                    <span className="font-heading font-bold text-sm text-[#191A23]">
+                      Click to choose image file
+                    </span>
+                    <span className="text-xs text-[#6B7280] mt-1">
+                      PNG, JPG, or WEBP up to 10MB
+                    </span>
+                  </div>
+                ) : (
+                  <div className="relative aspect-[4/3] rounded-[20px] overflow-hidden bg-black border-[1.5px] border-[#191A23]">
+                    <img src={newUrl} alt="Preview" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setNewUrl('')}
+                      className="absolute top-3 right-3 p-1.5 rounded-full bg-black/70 text-white backdrop-blur-md hover:bg-black transition-colors cursor-pointer"
+                    >
+                      <X className="w-4 h-4" />
                     </button>
                   </div>
                 )}
               </div>
-            ) : (
-              <div>
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full border-2 border-dashed border-[var(--line)] hover:border-[var(--accent)] rounded-2xl p-7 flex flex-col items-center justify-center gap-2 text-center transition-colors bg-[var(--bg)] cursor-pointer"
-                >
-                  <Upload className="w-7 h-7 text-[var(--accent)]" />
-                  <span className="text-xs font-semibold text-[var(--ink)]">Choose photo from your device</span>
-                  <span className="text-[11px] text-[var(--muted)]">Supports JPG, PNG, WebP</span>
-                </button>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleFileUpload}
-                />
-              </div>
             )}
 
-            <div>
-              <label className="text-xs font-semibold text-[var(--ink)] mb-1.5 block">
-                Caption / project note:
+            {/* Caption & Title input */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-[#191A23] uppercase tracking-wider font-mono">
+                Photo Caption / Topic
               </label>
               <input
                 type="text"
-                placeholder="e.g. Robot arm test at Table A-12"
+                placeholder="e.g. Chatbots Demo or Machine Learning Part 2"
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
-                className="w-full px-4 py-2.5 text-sm rounded-xl border border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] placeholder:text-[var(--muted)] hover:border-[var(--accent)] focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] transition-all shadow-2xs"
+                className="w-full px-3.5 py-2 text-xs rounded-xl border-[1.5px] border-[#191A23] bg-white text-[#191A23] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#B9FF66]"
               />
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-1 border-t border-[var(--line)]">
+            {/* Submit Action */}
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t-[1.5px] border-[#191A23]">
               <button
                 type="button"
                 onClick={closeModal}
-                className="px-5 py-2 rounded-xl text-xs font-semibold bg-[var(--bg)] hover:bg-[color-mix(in_srgb,var(--line)_50%,var(--bg))] text-[var(--ink)] border border-[var(--line)] transition-colors cursor-pointer"
+                className="commons-btn-secondary py-2 px-4 text-xs cursor-pointer"
               >
                 Cancel
               </button>
@@ -886,9 +761,10 @@ export const SharedPhotoGallery: React.FC = () => {
                 type="button"
                 onClick={handleCreatePhoto}
                 disabled={!newUrl.trim() || isUploading}
-                className="px-6 py-2 rounded-xl text-xs font-semibold bg-[var(--accent)] hover:opacity-90 text-[var(--bg)] transition-all shadow-sm cursor-pointer disabled:opacity-50"
+                className="commons-btn-primary py-2 px-5 text-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
-                {isUploading ? 'Uploading to Bucket...' : 'Post Snapshot'}
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>{isUploading ? 'Posting...' : 'Post to Gallery'}</span>
               </button>
             </div>
           </ModalBody>

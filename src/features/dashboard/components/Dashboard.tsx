@@ -7,9 +7,6 @@ import {
   Plus,
   Bell,
   ChevronRight,
-  GraduationCap,
-  Award,
-  Clock,
 } from 'lucide-react';
 import { Avatar, AvatarGroup } from '@heroui/react';
 import { useAuth } from '@/features/auth';
@@ -39,10 +36,6 @@ export const Dashboard: React.FC = () => {
   const myTeam = profile
     ? teams.find((t) => t.members.some((m) => m.userId === profile.id))
     : null;
-
-  const pendingReviewsCount = teams.reduce((acc, t) => {
-    return acc + (t.milestones || []).filter((m) => m.status === 'pending_review').length;
-  }, 0);
 
   return (
     <motion.div
@@ -102,49 +95,9 @@ export const Dashboard: React.FC = () => {
         </div>
       </motion.div>
 
-      {/* ── FACULTY SUPERVISION & MILESTONE TRACKING BANNER ── */}
+      {/* ── IMAGE GALLERY (COHORT & EVENT SNAPSHOTS) ───────────── */}
       <motion.div variants={fadeUp}>
-        <div className="commons-card p-6 sm:p-7 bg-[#F3F3F3] flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-start sm:items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-[#B9FF66] text-[#191A23] border-[1.5px] border-[#191A23] flex items-center justify-center shrink-0 shadow-[0_3px_0_#191A23]">
-              <GraduationCap className="w-6 h-6" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap mb-1">
-                <span className="tag-highlight text-xs uppercase font-mono">
-                  Supervision & Tracking
-                </span>
-                {pendingReviewsCount > 0 ? (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#191A23] text-[#B9FF66] border border-[#191A23]">
-                    <Clock className="w-3 h-3" />
-                    {pendingReviewsCount} Review{pendingReviewsCount === 1 ? '' : 's'} Due
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#FFFFFF] text-[#191A23] border border-[#191A23]">
-                    Active Supervision
-                  </span>
-                )}
-              </div>
-              <h3 className="font-heading text-lg sm:text-xl font-bold text-[#191A23]">
-                Faculty Milestone & Evaluation Portal
-              </h3>
-              <p className="text-xs sm:text-sm text-[#6B7280] mt-0.5 max-w-2xl leading-relaxed">
-                Supervise student team milestones, verify architecture & prototype deliverables, and provide graded feedback remarks.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 shrink-0 self-start md:self-auto">
-            <button
-              onClick={() => navigate('/faculty')}
-              className="commons-btn-primary"
-            >
-              <Award className="w-4 h-4" />
-              <span>Open Faculty Hub</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+        <SharedPhotoGallery />
       </motion.div>
 
       {/* ── 3 CORE POSITIVUS DUAL-CARD OVERVIEWS ───────────────── */}
@@ -274,11 +227,6 @@ export const Dashboard: React.FC = () => {
             </div>
           </div>
         </motion.div>
-      </motion.div>
-
-      {/* ── SHARED PROTOTYPES & COHORT PHOTO STREAM ────────────── */}
-      <motion.div variants={fadeUp}>
-        <SharedPhotoGallery />
       </motion.div>
 
       {/* ── MAIN CONTENT SPLIT: NOTES & FLOOR ──────────────────── */}
