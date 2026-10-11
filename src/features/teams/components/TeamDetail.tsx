@@ -74,42 +74,42 @@ export const TeamDetail: React.FC = () => {
       </div>
 
       {/* Main Team Hero Banner */}
-      <div className="commons-card p-8 bg-[var(--surface)] relative overflow-hidden">
+      <div className="commons-card p-6 sm:p-8 bg-[#F3F3F3] relative overflow-hidden">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div className="flex items-start sm:items-center gap-5">
-            <div className="w-16 h-16 rounded-full border-2 border-[var(--sun)] bg-[color-mix(in_srgb,var(--sun)_18%,var(--surface))] flex items-center justify-center font-heading text-2xl font-bold text-[var(--ink)] shrink-0">
+            <div className="w-16 h-16 rounded-[20px] border-[1.5px] border-[#191A23] bg-[#B9FF66] text-[#191A23] flex items-center justify-center font-heading text-2xl font-bold shrink-0 shadow-[0_4px_0_#191A23]">
               {team.name.slice(0, 2).toUpperCase()}
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-3xl font-heading text-[var(--ink)]">{team.name}</h1>
+                <h1 className="text-2xl sm:text-3xl font-heading font-bold text-[#191A23]">{team.name}</h1>
                 {isLead && (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded border border-[var(--sun)] text-[var(--moss)] bg-[color-mix(in_srgb,var(--sun)_15%,var(--surface))]">
-                    <Crown className="w-3 h-3 text-[var(--moss)]" />
+                  <span className="tag-highlight text-[11px] font-mono">
+                    <Crown className="w-3 h-3" />
                     Team Lead
                   </span>
                 )}
                 {isMember && !isLead && (
-                  <span className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded border badge-visibility-team">
+                  <span className="inline-flex items-center text-[10px] font-bold px-2.5 py-0.5 rounded-md border border-[#191A23] bg-white text-[#191A23]">
                     Team Member
                   </span>
                 )}
               </div>
               <div className="title-rule" />
 
-              <div className="flex flex-wrap items-center gap-4 text-xs text-[var(--muted)] -mt-2">
+              <div className="flex flex-wrap items-center gap-4 text-xs text-[#6B7280] -mt-2">
                 {team.tableNumber && (
-                  <div className="flex items-center gap-1 font-mono text-[var(--ink)]">
-                    <MapPin className="w-3.5 h-3.5 text-[var(--sun)]" />
+                  <div className="flex items-center gap-1 font-mono font-bold text-[#191A23]">
+                    <MapPin className="w-3.5 h-3.5 text-[#191A23]" />
                     <span>Table {team.tableNumber}</span>
                   </div>
                 )}
-                <div className="flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5 text-[var(--muted)]" />
+                <div className="flex items-center gap-1 font-medium">
+                  <Calendar className="w-3.5 h-3.5 text-[#6B7280]" />
                   <span>Formed on {new Date(team.createdAt).toLocaleDateString()}</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Users className="w-3.5 h-3.5 text-[var(--muted)]" />
+                <div className="flex items-center gap-1 font-medium">
+                  <Users className="w-3.5 h-3.5 text-[#6B7280]" />
                   <span>{team.members.length} Collaborator{team.members.length === 1 ? '' : 's'}</span>
                 </div>
               </div>

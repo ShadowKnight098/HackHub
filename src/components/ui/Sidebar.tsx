@@ -77,22 +77,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpenMobile = false, onCloseM
       <motion.aside
         animate={{ width: collapsed ? 72 : 240 }}
         transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
-        className={`fixed md:relative top-0 bottom-0 left-0 flex flex-col h-screen bg-[var(--surface)] border-r border-[var(--line)] z-50 shrink-0 overflow-hidden transition-transform duration-300 md:translate-x-0 ${
+        className={`fixed md:relative top-0 bottom-0 left-0 flex flex-col h-screen bg-[#FFFFFF] border-r-[1.5px] border-[#191A23] z-50 shrink-0 overflow-hidden transition-transform duration-300 md:translate-x-0 ${
           isOpenMobile ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0'
         }`}
       >
         {/* Top Header with Awesome Menu Icon on the RIGHT */}
-        <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-3.5 py-4 border-b border-[var(--line)] gap-2`}>
+        <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-3.5 py-4 border-b-[1.5px] border-[#191A23] gap-2`}>
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="commons-logo-mark shrink-0">
-              <span className="font-heading font-bold text-sm text-[var(--surface)]">H</span>
+              <span className="font-heading font-bold text-xs text-[#B9FF66]">H</span>
             </div>
             {!collapsed && (
               <div className="min-w-0 overflow-hidden">
                 <p className="font-heading font-bold text-[var(--ink)] tracking-tight leading-none text-base whitespace-nowrap">
                   HackHub
                 </p>
-                <p className="text-[11px] text-[var(--muted)] mt-0.5 whitespace-nowrap">Workspace</p>
+                <p className="text-[11px] text-[var(--muted)] mt-0.5 whitespace-nowrap font-medium">Digital Suite</p>
               </div>
             )}
           </div>
@@ -100,7 +100,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpenMobile = false, onCloseM
           {/* Awesome Menu Toggle Button on the RIGHT (Desktop) */}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="hidden md:flex items-center justify-center p-1.5 rounded-lg border border-[var(--line)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--accent)] hover:border-[var(--accent)] transition-all shadow-sm group shrink-0"
+            className="hidden md:flex items-center justify-center p-1.5 rounded-lg border border-[#191A23] bg-[#F3F3F3] text-[var(--ink)] hover:bg-[#B9FF66] transition-all shadow-[0_2px_0_#191A23] group shrink-0 cursor-pointer"
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
@@ -122,7 +122,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpenMobile = false, onCloseM
         </div>
 
         {/* Nav items */}
-        <nav className="flex-1 py-4 px-3 flex flex-col gap-1 overflow-y-auto overflow-x-hidden">
+        <nav className="flex-1 py-4 px-3 flex flex-col gap-1.5 overflow-y-auto overflow-x-hidden">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             return (
@@ -139,28 +139,28 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpenMobile = false, onCloseM
                   end={item.path === '/'}
                   onClick={handleNavClick}
                   className={({ isActive }) =>
-                    `relative flex items-center ${collapsed ? 'justify-center' : 'justify-start'} gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-200 group overflow-hidden ${
+                    `relative flex items-center ${collapsed ? 'justify-center' : 'justify-start'} gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 group overflow-hidden ${
                       isActive
                         ? 'commons-nav-active'
-                        : 'text-[var(--muted)] hover:text-[var(--ink)] hover:bg-[color-mix(in_srgb,var(--line)_35%,transparent)]'
+                        : 'text-[var(--ink)] hover:bg-[#F3F3F3] hover:translate-x-0.5'
                     }`
                   }
                 >
                   {({ isActive }) => (
                     <>
-                      <Icon className={`w-[18px] h-[18px] shrink-0 transition-colors ${isActive ? 'text-[var(--accent)]' : 'text-[var(--muted)] group-hover:text-[var(--ink)]'}`} />
+                      <Icon className={`w-[18px] h-[18px] shrink-0 transition-colors ${isActive ? 'text-[#191A23]' : 'text-[var(--muted)] group-hover:text-[var(--ink)]'}`} />
                       {!collapsed && (
                         <span className="truncate whitespace-nowrap select-none min-w-0 flex-1">
                           {item.label}
                         </span>
                       )}
                       {item.badge && !collapsed && (
-                        <span className="shrink-0 text-[10px] font-bold bg-[color-mix(in_srgb,var(--accent)_12%,var(--surface))] text-[var(--accent)] border border-[color-mix(in_srgb,var(--accent)_25%,transparent)] rounded-full px-2 py-0.5 leading-none">
+                        <span className="shrink-0 text-[10px] font-bold bg-[#B9FF66] text-[#191A23] border border-[#191A23] rounded-full px-2 py-0.5 leading-none shadow-[0_1px_0_#191A23]">
                           {item.badge}
                         </span>
                       )}
                       {item.badge && collapsed && (
-                        <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[var(--accent)]" />
+                        <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#B9FF66] border border-[#191A23]" />
                       )}
                     </>
                   )}
@@ -199,9 +199,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpenMobile = false, onCloseM
         </nav>
 
         {/* Clean, minimal Profile footer */}
-        <div className="border-t border-[var(--line)] p-2.5 bg-[var(--surface)]">
+        <div className="border-t-[1.5px] border-[#191A23] p-2.5 bg-[#FFFFFF]">
           {profile && (
-            <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} gap-2 p-1.5 rounded-lg hover:bg-[color-mix(in_srgb,var(--line)_30%,transparent)] transition-colors`}>
+            <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} gap-2 p-1.5 rounded-xl hover:bg-[#F3F3F3] transition-colors`}>
               <div
                 className="flex items-center gap-2.5 min-w-0 cursor-pointer flex-1"
                 onClick={() => { handleNavClick(); navigate('/profile'); }}
@@ -211,7 +211,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpenMobile = false, onCloseM
                   size="sm"
                   src={profile.avatarUrl || undefined}
                   name={profile.fullName.slice(0, 2).toUpperCase()}
-                  className="w-7 h-7 text-[10px] border border-[var(--line)] bg-[var(--bg)] text-[var(--ink)] shrink-0"
+                  className="w-7 h-7 text-[10px] border-[1.5px] border-[#191A23] bg-[#B9FF66] text-[#191A23] font-bold shrink-0"
                 />
                 {!collapsed && (
                   <div className="min-w-0 overflow-hidden">

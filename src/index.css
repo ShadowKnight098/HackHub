@@ -3,38 +3,51 @@
 @tailwind utilities;
 
 @layer base {
-  :root {                       /* Light: Ivory */
-    --bg: #f4f1ea;              /* page background (ivory) */
-    --surface: #fdfcf9;         /* cards, panels, inputs */
-    --ink: #1f2430;             /* primary text (navy-charcoal) */
-    --muted: #6a6e7a;           /* secondary text */
-    --line: #ddd7ca;            /* borders, dividers */
-    --accent: #7b2d3b;          /* burgundy: buttons, selected states, links */
-    --moss: #a8832f;            /* antique gold: secondary highlight */
-    --sun: #c9a45c;             /* champagne: fine details, underlines */
-    --sky: #2f4a6d;             /* navy: tertiary highlight */
-    --n1: #f2e8cb;              /* note tint: champagne */
-    --n2: #dfe4ec;              /* note tint: pale slate */
-    --n3: #ecd9d9;              /* note tint: blush */
+  :root {
+    /* Pure Positivus Neo-Grotesque Signature Palette */
+    --bg: #FFFFFF;              /* Crisp pure white page background */
+    --surface: #F3F3F3;         /* Neutral light-gray container & secondary card */
+    --surface-white: #FFFFFF;   /* Clean white card surface */
+    --surface-dark: #191A23;    /* Deep obsidian/black card */
+    --ink: #191A23;             /* Primary text: deep pitch graphite */
+    --muted: #6B7280;           /* Muted secondary body text */
+    --line: #191A23;            /* Signature solid dark border */
+    --line-subtle: #E5E7EB;     /* Subtle light dividers */
+    --accent: #B9FF66;          /* Exact Signature Electric Neon Lime Green */
+    --lime: #B9FF66;            /* Direct alias for lime */
+    --dark: #191A23;            /* Direct alias for dark */
+    --moss: #191A23;            /* Dark contrast */
+    --sun: #B9FF66;             /* Lime accent */
+    --sky: #191A23;             /* Dark graphite */
+    --n1: #B9FF66;              /* Lime badge */
+    --n2: #F3F3F3;              /* Gray badge */
+    --n3: #191A23;              /* Dark badge */
 
     color-scheme: light;
   }
 
-  :root[data-theme="dark"] {    /* Dark: Charcoal */
-    --bg: #14161c;
-    --surface: #1c1f27;
-    --ink: #efeae0;
-    --muted: #9a9ba5;
-    --line: #2e323d;
-    --accent: #d98a9a;          /* dusty rose */
-    --moss: #d4b06a;
-    --sun: #e3c27d;
-    --sky: #8fa8cf;
-    --n1: #3d3623;
-    --n2: #262c3a;
-    --n3: #3b2a2f;
+  /* Universal single theme: residual data-theme uses identical Positivus system */
+  :root[data-theme="dark"],
+  :root[data-theme="light"] {
+    --bg: #FFFFFF;
+    --surface: #F3F3F3;
+    --surface-white: #FFFFFF;
+    --surface-dark: #191A23;
+    --ink: #191A23;
+    --muted: #6B7280;
+    --line: #191A23;
+    --line-subtle: #E5E7EB;
+    --accent: #B9FF66;
+    --lime: #B9FF66;
+    --dark: #191A23;
+    --moss: #191A23;
+    --sun: #B9FF66;
+    --sky: #191A23;
+    --n1: #B9FF66;
+    --n2: #F3F3F3;
+    --n3: #191A23;
 
-    color-scheme: dark;
+    color-scheme: light;
   }
 
   * {
@@ -44,46 +57,39 @@
   }
 
   html {
-    background-color: var(--bg);
-    color: var(--ink);
+    background-color: #FFFFFF;
+    color: #191A23;
   }
 
   body {
-    background-color: var(--bg);
-    color: var(--ink);
-    font-family: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+    background-color: #FFFFFF;
+    color: #191A23;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     font-size: 15px;
     line-height: 1.5;
     overflow-x: hidden;
   }
 
-  /* Headings: Fraunces 700 with tight line-height */
+  /* Headings: Space Grotesk 700 with crisp letter-spacing */
   h1, h2, h3, h4, .font-heading {
-    font-family: 'Fraunces', serif;
+    font-family: 'Space Grotesk', system-ui, sans-serif;
     font-weight: 700;
-    line-height: 1.1;
-    letter-spacing: -0.015em;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: #191A23;
   }
 
-  /* Numbers / display */
-  .font-fraunces {
-    font-family: 'Fraunces', serif;
+  /* Display numbers & badges */
+  .font-display {
+    font-family: 'Space Grotesk', sans-serif;
   }
 
   /* Body & UI font */
   .font-body {
-    font-family: 'Hanken Grotesk', system-ui, sans-serif;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   }
 
-  /* Accent labels: Cormorant Garamond italic */
-  .font-accent, .italic-label {
-    font-family: 'Cormorant Garamond', Georgia, serif;
-    font-style: italic;
-    font-weight: 700;
-    letter-spacing: 0.01em;
-  }
-
-  /* Custom subtle scrollbar */
+  /* Custom crisp scrollbar */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -92,192 +98,298 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: color-mix(in srgb, var(--line) 90%, var(--muted));
+    background: #D1D5DB;
     border-radius: 999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--muted);
+    background: #191A23;
   }
 }
 
 @layer utilities {
-  /* Faint dot grid specified in prompt */
-  .bg-ivory-grid {
-    background-color: var(--bg);
-    background-image: radial-gradient(color-mix(in srgb, var(--ink) 9%, transparent) 1px, transparent 1.3px);
-    background-size: 22px 22px;
+  /* Subtle clean background grid */
+  .bg-ivory-grid, .bg-positivus-grid {
+    background-color: #FFFFFF;
+    background-image: radial-gradient(#191A23 0.75px, transparent 0.75px);
+    background-size: 24px 24px;
+    background-position: 0 0;
+    background-repeat: repeat;
   }
 
-  /* Card and Panel specs: surface, 1px line border, 10px radius, soft shadow */
+  /* Signature Positivus Highlighter Badges (like 'Services', 'Case study' in reference image) */
+  .tag-highlight, .badge-lime {
+    background-color: #B9FF66;
+    color: #191A23;
+    border-radius: 8px;
+    padding: 3px 10px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: -0.01em;
+  }
+
+  .tag-highlight-dark {
+    background-color: #191A23;
+    color: #FFFFFF;
+    border-radius: 8px;
+    padding: 3px 10px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: -0.01em;
+  }
+
+  .tag-highlight-white {
+    background-color: #FFFFFF;
+    color: #191A23;
+    border-radius: 8px;
+    padding: 3px 10px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: -0.01em;
+  }
+
+  /* Card and Panel specs: 1.5px black border, 28px radius, 0 5px 0 #191A23 tactile drop shadow */
   .commons-card {
     background-color: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    box-shadow: 0 12px 32px -22px rgba(20, 24, 40, 0.5);
-    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+    border: 1.5px solid #191A23;
+    border-radius: 28px;
+    box-shadow: 0 5px 0 #191A23;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .commons-card:hover {
-    border-color: color-mix(in srgb, var(--sun) 65%, var(--line));
+    border-color: #191A23;
   }
 
-  /* 2px, 48px-wide --sun rule under page titles */
+  .commons-card-white {
+    background-color: #FFFFFF;
+    border: 1.5px solid #191A23;
+    border-radius: 28px;
+    box-shadow: 0 5px 0 #191A23;
+  }
+
+  .commons-card-dark {
+    background-color: #191A23;
+    color: #FFFFFF;
+    border: 1.5px solid #191A23;
+    border-radius: 28px;
+    box-shadow: 0 5px 0 #191A23;
+  }
+
+  /* Title lime pill underline or accent rule */
   .title-rule {
     width: 48px;
-    height: 2px;
-    background-color: var(--sun);
+    height: 4px;
+    background-color: #B9FF66;
     margin-top: 10px;
     margin-bottom: 18px;
-    border-radius: 2px;
+    border-radius: 9999px;
   }
 
-  /* 30px circle logo filled with linear-gradient(135deg, var(--sun), var(--moss)) */
+  /* Positivus 32px Logo Mark */
   .commons-logo-mark {
-    width: 30px;
-    height: 30px;
-    border-radius: 9999px;
-    background: linear-gradient(135deg, var(--sun), var(--moss));
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background: #191A23;
+    border: 1.5px solid #191A23;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: var(--surface);
-    box-shadow: 0 2px 8px -2px rgba(20, 24, 40, 0.25);
+    color: #B9FF66;
+    font-weight: 800;
     flex-shrink: 0;
   }
 
-  /* Primary button: --accent bg, --bg text, 8px radius, letter-spacing .02em */
+  /* Primary button: #191A23 black bg, white text, 14px radius, hover lime with solid shadow */
   .commons-btn-primary {
-    background-color: var(--accent);
-    color: var(--bg);
-    border-radius: 8px;
-    letter-spacing: 0.02em;
-    font-family: 'Hanken Grotesk', sans-serif;
+    background-color: #191A23;
+    color: #FFFFFF;
+    border: 1.5px solid #191A23;
+    border-radius: 14px;
+    font-family: 'Space Grotesk', sans-serif;
     font-weight: 600;
     font-size: 14px;
-    padding: 8px 18px;
-    transition: filter 0.2s ease, opacity 0.2s ease;
+    padding: 10px 22px;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
+    box-shadow: 0 4px 0 #000000;
+    cursor: pointer;
   }
   .commons-btn-primary:hover {
-    filter: brightness(1.08);
+    background-color: #B9FF66;
+    color: #191A23;
+    border-color: #191A23;
+    box-shadow: 0 4px 0 #191A23;
+    transform: translateY(-1px);
+  }
+  .commons-btn-primary:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #191A23;
   }
 
-  /* Secondary button */
+  /* Secondary button: white bg, black text, 1.5px black border */
   .commons-btn-secondary {
-    background-color: var(--surface);
-    color: var(--ink);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    font-family: 'Hanken Grotesk', sans-serif;
-    font-weight: 500;
+    background-color: #FFFFFF;
+    color: #191A23;
+    border: 1.5px solid #191A23;
+    border-radius: 14px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
     font-size: 14px;
-    padding: 8px 16px;
-    transition: border-color 0.2s ease, background-color 0.2s ease;
+    padding: 10px 20px;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
+    box-shadow: 0 3px 0 #191A23;
+    cursor: pointer;
   }
   .commons-btn-secondary:hover {
-    border-color: var(--accent);
-    background-color: color-mix(in srgb, var(--surface) 92%, var(--line));
+    background-color: #F3F3F3;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 0 #191A23;
+  }
+  .commons-btn-secondary:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #191A23;
   }
 
-  /* Active nav item: --surface background with a 2px inset --sun bar on left */
+  /* Lime button: bold lime background */
+  .commons-btn-lime {
+    background-color: #B9FF66;
+    color: #191A23;
+    border: 1.5px solid #191A23;
+    border-radius: 14px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 10px 22px;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 3px 0 #191A23;
+    cursor: pointer;
+  }
+  .commons-btn-lime:hover {
+    background-color: #191A23;
+    color: #B9FF66;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 0 #191A23;
+  }
+
+  /* Circular Action Pills / Arrows */
+  .btn-circle-arrow {
+    width: 40px;
+    height: 40px;
+    border-radius: 9999px;
+    background-color: #191A23;
+    color: #B9FF66;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+  }
+  .btn-circle-arrow:hover {
+    transform: scale(1.08) rotate(45deg);
+    background-color: #B9FF66;
+    color: #191A23;
+  }
+
+  /* Active nav item */
   .commons-nav-active {
-    background-color: var(--surface);
-    color: var(--ink) !important;
-    font-weight: 600;
+    background-color: #B9FF66;
+    color: #191A23 !important;
+    font-weight: 700;
     position: relative;
-    border: 1px solid var(--line);
-  }
-  .commons-nav-active::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 4px;
-    bottom: 4px;
-    width: 2px;
-    background-color: var(--sun);
-    border-radius: 2px;
+    border: 1.5px solid #191A23;
+    border-radius: 12px;
+    box-shadow: 0 3px 0 #191A23;
   }
 
-  /* Selected chip / active filter: --accent background, --bg text */
+  /* Active chip / filter */
   .commons-chip-active {
-    background-color: var(--accent) !important;
-    color: var(--bg) !important;
-    border-color: var(--accent) !important;
+    background-color: #B9FF66 !important;
+    color: #191A23 !important;
+    border-color: #191A23 !important;
+    font-weight: 700 !important;
   }
 
-  /* Sticky notes: straight (no rotation), 6px radius, 3px --sun top border, soft shadow, tinted */
+  /* Sticky notes / architecture cards */
   .commons-sticky-note {
-    border-radius: 6px;
-    border-top: 3px solid var(--sun);
-    box-shadow: 0 10px 24px -18px rgba(20, 24, 40, 0.4);
-    border-left: 1px solid var(--line);
-    border-right: 1px solid var(--line);
-    border-bottom: 1px solid var(--line);
+    border-radius: 20px;
+    border: 1.5px solid #191A23;
+    box-shadow: 0 5px 0 #191A23;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
   .commons-sticky-note:hover {
     transform: translateY(-2px);
-    box-shadow: 0 14px 28px -16px rgba(20, 24, 40, 0.45);
+    box-shadow: 0 7px 0 #191A23;
   }
-  .note-tint-1 { background-color: var(--n1); }
-  .note-tint-2 { background-color: var(--n2); }
-  .note-tint-3 { background-color: var(--n3); }
+  .note-tint-1 { background-color: #B9FF66; color: #191A23; }
+  .note-tint-2 { background-color: #F3F3F3; color: #191A23; }
+  .note-tint-3 { background-color: #FFFFFF; color: #191A23; }
 
-  /* Focus ring: 2px solid --accent, 1px offset */
+  /* Focus ring */
   .commons-focus:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 1px;
+    outline: 2px solid #191A23;
+    outline-offset: 2px;
   }
 
-  /* Visibility colors according to spec: private=--accent, team=--sky, hackathon=--moss, public=--muted */
+  /* Visibility chips */
   .badge-visibility-private {
-    background-color: color-mix(in srgb, var(--accent) 14%, var(--surface));
-    color: var(--accent);
-    border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+    background-color: #F3F3F3;
+    color: #191A23;
+    border: 1px solid #191A23;
   }
   .badge-visibility-team {
-    background-color: color-mix(in srgb, var(--sky) 14%, var(--surface));
-    color: var(--sky);
-    border: 1px solid color-mix(in srgb, var(--sky) 30%, transparent);
+    background-color: #B9FF66;
+    color: #191A23;
+    border: 1px solid #191A23;
   }
   .badge-visibility-hackathon {
-    background-color: color-mix(in srgb, var(--moss) 14%, var(--surface));
-    color: var(--moss);
-    border: 1px solid color-mix(in srgb, var(--moss) 30%, transparent);
+    background-color: #191A23;
+    color: #FFFFFF;
+    border: 1px solid #191A23;
   }
   .badge-visibility-public {
-    background-color: color-mix(in srgb, var(--muted) 14%, var(--surface));
-    color: var(--muted);
-    border: 1px solid color-mix(in srgb, var(--muted) 30%, transparent);
+    background-color: #FFFFFF;
+    color: #191A23;
+    border: 1px solid #191A23;
   }
 
   /* Universal crisp input styles */
   .commons-input {
     width: 100%;
-    height: 40px;
+    height: 44px;
     padding: 8px 14px;
-    border-radius: 8px;
-    border: 1px solid var(--line);
-    background-color: var(--surface);
-    color: var(--ink);
-    font-family: 'Hanken Grotesk', system-ui, sans-serif;
+    border-radius: 12px;
+    border: 1.5px solid #191A23;
+    background-color: #FFFFFF;
+    color: #191A23;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     font-size: 14px;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
     outline: none;
+    box-shadow: 0 2px 0 #191A23;
   }
   .commons-input:hover {
-    border-color: color-mix(in srgb, var(--accent) 50%, var(--line));
+    border-color: #191A23;
   }
   .commons-input:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent);
+    border-color: #191A23;
+    box-shadow: 0 0 0 3px #B9FF66;
   }
 }
 
@@ -294,8 +406,8 @@
   position: static !important;
   transform: none !important;
   margin-bottom: 6px !important;
-  font-family: 'Hanken Grotesk', system-ui, sans-serif !important;
-  font-size: 12px !important;
+  font-family: 'Space Grotesk', system-ui, sans-serif !important;
+  font-size: 13px !important;
   font-weight: 600 !important;
   color: var(--ink) !important;
   pointer-events: auto !important;
@@ -308,29 +420,29 @@
 }
 
 [data-slot="input-wrapper"], [data-slot="trigger"] {
-  background-color: var(--surface) !important;
-  border: 1px solid var(--line) !important;
-  border-radius: 8px !important;
-  min-height: 42px !important;
-  box-shadow: none !important;
+  background-color: #FFFFFF !important;
+  border: 1.5px solid #191A23 !important;
+  border-radius: 12px !important;
+  min-height: 44px !important;
+  box-shadow: 0 2px 0 #191A23 !important;
   display: flex !important;
   align-items: center !important;
   position: relative !important;
-  padding-left: 12px !important;
-  padding-right: 12px !important;
+  padding-left: 14px !important;
+  padding-right: 14px !important;
   transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
 }
 
 [data-slot="input-wrapper"]:hover, [data-slot="trigger"]:hover {
-  border-color: color-mix(in srgb, var(--accent) 50%, var(--line)) !important;
+  border-color: #191A23 !important;
 }
 
 [data-slot="input-wrapper"][data-focus="true"],
 [data-slot="input-wrapper"]:focus-within,
 [data-slot="trigger"][data-focus="true"],
 [data-slot="trigger"]:focus-visible {
-  border-color: var(--accent) !important;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent) !important;
+  border-color: #191A23 !important;
+  box-shadow: 0 0 0 3px #B9FF66 !important;
 }
 
 [data-slot="inner-wrapper"] {
@@ -349,7 +461,7 @@
   outline: none !important;
   box-shadow: none !important;
   color: var(--ink) !important;
-  font-family: 'Hanken Grotesk', system-ui, sans-serif !important;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif !important;
   font-size: 14px !important;
   line-height: 1.4 !important;
   padding: 0 !important;
@@ -357,13 +469,13 @@
 }
 
 [data-slot="input"]::placeholder {
-  color: var(--muted) !important;
-  opacity: 0.8 !important;
+  color: #9CA3AF !important;
+  opacity: 0.9 !important;
 }
 
 [data-slot="value"] {
   color: var(--ink) !important;
-  font-family: 'Hanken Grotesk', system-ui, sans-serif !important;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif !important;
   font-size: 14px !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
@@ -396,4 +508,3 @@ select[aria-hidden="true"],
   overflow: hidden !important;
   text-overflow: ellipsis !important;
 }
-

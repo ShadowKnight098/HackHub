@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   GraduationCap,
-  ShieldCheck,
   Search,
   CheckCircle2,
   Clock,
@@ -10,7 +9,6 @@ import {
   Award,
   ArrowRight,
   MessageSquare,
-  BookOpen,
 } from 'lucide-react';
 import { useTeams } from '@/features/teams/hooks/useTeams';
 import { useAuth } from '@/features/auth';
@@ -79,88 +77,91 @@ export const FacultyHub: React.FC = () => {
   return (
     <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-12">
       {/* ── FACULTY HUB HERO HEADER ── */}
-      <div className="commons-card p-6 sm:p-8 bg-[var(--surface)] border border-[var(--line)] rounded-2xl relative overflow-hidden">
+      <div className="commons-card p-6 sm:p-8 bg-[#F3F3F3] relative overflow-hidden">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-start sm:items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-[var(--accent)]/15 text-[var(--accent)] border border-[var(--accent)]/30 flex items-center justify-center shrink-0 shadow-inner">
-              <GraduationCap className="w-7 h-7" />
+            <div className="w-14 h-14 rounded-2xl bg-[#B9FF66] text-[#191A23] border-[1.5px] border-[#191A23] flex items-center justify-center shrink-0 shadow-[0_4px_0_#191A23]">
+              <GraduationCap className="w-8 h-8" />
             </div>
             <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[var(--accent)]/15 text-[var(--accent)] border border-[var(--accent)]/30">
-                  <ShieldCheck className="w-3 h-3" />
+              <div className="flex items-center gap-2 mb-2">
+                <span className="tag-highlight text-xs font-mono uppercase">
                   Faculty Supervision & Tracking Hub
                 </span>
-                <span className="text-xs text-[var(--muted)]">• Academic Session 2026–27</span>
+                <span className="text-xs text-[#191A23] font-medium">• Academic Session 2026–27</span>
               </div>
-              <h1 className="font-heading text-2xl sm:text-3xl font-bold text-[var(--ink)] tracking-tight">
+              <h1 className="font-heading text-2xl sm:text-3xl font-bold text-[#191A23] tracking-tight">
                 Project Milestone & Evaluation Portal
               </h1>
-              <p className="text-xs sm:text-sm text-[var(--muted)] mt-1 max-w-2xl leading-relaxed">
+              <p className="text-xs sm:text-sm text-[#6B7280] mt-1 max-w-2xl leading-relaxed">
                 Supervise student research & engineering teams, review code deliverables, approve phase milestones, and provide direct rubric feedback.
               </p>
             </div>
           </div>
 
           {/* Guide Badge / Info Card */}
-          <div className="p-3.5 rounded-xl bg-[var(--bg)] border border-[var(--line)] flex items-center gap-3 shrink-0">
-            <div className="w-10 h-10 rounded-full bg-[var(--accent)] text-white font-bold flex items-center justify-center text-sm">
+          <div className="p-4 rounded-[18px] bg-white border-[1.5px] border-[#191A23] shadow-[0_3px_0_#191A23] flex items-center gap-3 shrink-0">
+            <div className="w-10 h-10 rounded-full bg-[#191A23] text-[#B9FF66] font-bold flex items-center justify-center text-sm border border-[#191A23]">
               {profile?.fullName?.slice(0, 1) || 'F'}
             </div>
             <div>
-              <div className="text-xs font-bold text-[var(--ink)]">
+              <div className="text-xs font-bold text-[#191A23]">
                 {profile?.fullName || 'Dr. Aris Thorne'}
               </div>
-              <div className="text-[11px] text-[var(--muted)] font-mono">
+              <div className="text-[11px] text-[#6B7280] font-mono font-medium">
                 {profile?.role === UserRole.FACULTY ? 'Faculty Evaluator' : 'Faculty / Administrator'}
               </div>
             </div>
           </div>
         </div>
 
-        {/* ── TOP KPI METRIC TELEMETRY CARDS ── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 mt-6 pt-6 border-t border-[var(--line)]">
-          <div className="p-3.5 rounded-xl bg-[var(--bg)] border border-[var(--line)] flex flex-col gap-1">
-            <span className="text-[11px] font-mono font-medium text-[var(--muted)] uppercase tracking-wider">
+        {/* ── TOP KPI METRIC TELEMETRY CARDS (DUAL-CARD TREATMENT) ── */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t-[1.5px] border-[#191A23]">
+          {/* Card 1: Monitored Projects (White) */}
+          <div className="p-4 rounded-[18px] bg-white border-[1.5px] border-[#191A23] shadow-[0_4px_0_#191A23] flex flex-col gap-1">
+            <span className="text-[10px] font-mono font-bold text-[#6B7280] uppercase tracking-wider">
               Monitored Projects
             </span>
-            <div className="text-2xl font-bold font-mono text-[var(--ink)]">
+            <div className="text-3xl font-bold font-mono text-[#191A23]">
               {metrics.totalProjects}
             </div>
-            <span className="text-[11px] text-[var(--muted)]">Active student cohorts</span>
+            <span className="text-[11px] text-[#6B7280]">Active student cohorts</span>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-amber-500/[0.04] border border-amber-500/25 flex flex-col gap-1">
+          {/* Card 2: Pending Reviews (Electric Lime) */}
+          <div className="p-4 rounded-[18px] bg-[#B9FF66] border-[1.5px] border-[#191A23] shadow-[0_4px_0_#191A23] flex flex-col gap-1 text-[#191A23]">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-mono font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#191A23]">
                 Pending Reviews
               </span>
-              <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#191A23] animate-ping" />
             </div>
-            <div className="text-2xl font-bold font-mono text-amber-600 dark:text-amber-400">
+            <div className="text-3xl font-bold font-mono text-[#191A23]">
               {metrics.pendingCount}
             </div>
-            <span className="text-[11px] text-[var(--muted)]">Awaiting faculty sign-off</span>
+            <span className="text-[11px] font-medium text-[#191A23]/80">Awaiting faculty sign-off</span>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-emerald-500/[0.04] border border-emerald-500/25 flex flex-col gap-1">
-            <span className="text-[11px] font-mono font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+          {/* Card 3: Phases Approved (Soft Gray) */}
+          <div className="p-4 rounded-[18px] bg-[#F3F3F3] border-[1.5px] border-[#191A23] shadow-[0_4px_0_#191A23] flex flex-col gap-1 text-[#191A23]">
+            <span className="text-[10px] font-mono font-bold text-[#6B7280] uppercase tracking-wider">
               Phases Approved
             </span>
-            <div className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
+            <div className="text-3xl font-bold font-mono text-[#191A23]">
               {metrics.approvedCount}
             </div>
-            <span className="text-[11px] text-[var(--muted)]">Milestones signed-off</span>
+            <span className="text-[11px] text-[#6B7280]">Milestones signed-off</span>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-rose-500/[0.04] border border-rose-500/25 flex flex-col gap-1">
-            <span className="text-[11px] font-mono font-medium text-rose-600 dark:text-rose-400 uppercase tracking-wider">
+          {/* Card 4: Revision Requested (Dark Obsidian) */}
+          <div className="p-4 rounded-[18px] bg-[#191A23] border-[1.5px] border-[#191A23] shadow-[0_4px_0_#191A23] flex flex-col gap-1 text-white">
+            <span className="text-[10px] font-mono font-bold text-[#B9FF66] uppercase tracking-wider">
               Revision Requested
             </span>
-            <div className="text-2xl font-bold font-mono text-rose-600 dark:text-rose-400">
+            <div className="text-3xl font-bold font-mono text-white">
               {metrics.revisionCount}
             </div>
-            <span className="text-[11px] text-[var(--muted)]">Flagged for student fixes</span>
+            <span className="text-[11px] text-gray-300">Flagged for student fixes</span>
           </div>
         </div>
       </div>
@@ -169,34 +170,34 @@ export const FacultyHub: React.FC = () => {
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         {/* Search input */}
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted)]" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B7280]" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by project name, abstract, or student name..."
-            className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] focus:outline-none focus:border-[var(--accent)] shadow-xs"
+            className="w-full pl-9 pr-4 py-2.5 text-xs sm:text-sm rounded-[14px] border-[1.5px] border-[#191A23] bg-white text-[#191A23] placeholder:text-[#6B7280] focus:outline-none focus:ring-2 focus:ring-[#B9FF66] shadow-[0_2px_0_#191A23]"
           />
         </div>
 
         {/* Status Filter Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
           <button
             onClick={() => setStatusFilter('all')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer shrink-0 ${
+            className={`px-3.5 py-2 rounded-[12px] text-xs font-bold transition-all cursor-pointer shrink-0 border-[1.5px] border-[#191A23] ${
               statusFilter === 'all'
-                ? 'bg-[var(--accent)] text-white shadow-xs'
-                : 'border border-[var(--line)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--ink)]'
+                ? 'bg-[#191A23] text-[#B9FF66] shadow-[0_3px_0_#191A23]'
+                : 'bg-white text-[#191A23] hover:bg-[#F3F3F3]'
             }`}
           >
             All ({teams.length})
           </button>
           <button
             onClick={() => setStatusFilter('pending_review')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer shrink-0 flex items-center gap-1.5 ${
+            className={`px-3.5 py-2 rounded-[12px] text-xs font-bold transition-all cursor-pointer shrink-0 border-[1.5px] border-[#191A23] flex items-center gap-1.5 ${
               statusFilter === 'pending_review'
-                ? 'bg-amber-500 text-white shadow-xs'
-                : 'border border-[var(--line)] bg-[var(--surface)] text-[var(--muted)] hover:text-amber-500'
+                ? 'bg-[#B9FF66] text-[#191A23] shadow-[0_3px_0_#191A23]'
+                : 'bg-white text-[#191A23] hover:bg-[#F3F3F3]'
             }`}
           >
             <Clock className="w-3.5 h-3.5" />
@@ -204,10 +205,10 @@ export const FacultyHub: React.FC = () => {
           </button>
           <button
             onClick={() => setStatusFilter('approved')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer shrink-0 flex items-center gap-1.5 ${
+            className={`px-3.5 py-2 rounded-[12px] text-xs font-bold transition-all cursor-pointer shrink-0 border-[1.5px] border-[#191A23] flex items-center gap-1.5 ${
               statusFilter === 'approved'
-                ? 'bg-emerald-600 text-white shadow-xs'
-                : 'border border-[var(--line)] bg-[var(--surface)] text-[var(--muted)] hover:text-emerald-500'
+                ? 'bg-[#191A23] text-white shadow-[0_3px_0_#191A23]'
+                : 'bg-white text-[#191A23] hover:bg-[#F3F3F3]'
             }`}
           >
             <CheckCircle2 className="w-3.5 h-3.5" />
@@ -215,10 +216,10 @@ export const FacultyHub: React.FC = () => {
           </button>
           <button
             onClick={() => setStatusFilter('needs_revision')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer shrink-0 flex items-center gap-1.5 ${
+            className={`px-3.5 py-2 rounded-[12px] text-xs font-bold transition-all cursor-pointer shrink-0 border-[1.5px] border-[#191A23] flex items-center gap-1.5 ${
               statusFilter === 'needs_revision'
-                ? 'bg-rose-600 text-white shadow-xs'
-                : 'border border-[var(--line)] bg-[var(--surface)] text-[var(--muted)] hover:text-rose-500'
+                ? 'bg-[#191A23] text-rose-300 shadow-[0_3px_0_#191A23]'
+                : 'bg-white text-[#191A23] hover:bg-[#F3F3F3]'
             }`}
           >
             <AlertTriangle className="w-3.5 h-3.5" />
@@ -228,15 +229,17 @@ export const FacultyHub: React.FC = () => {
       </div>
 
       {/* ── PROJECT TRACKING MATRIX / TABLE ── */}
-      <div className="commons-card bg-[var(--surface)] border border-[var(--line)] rounded-2xl overflow-hidden shadow-xs">
-        <div className="p-4 sm:p-5 border-b border-[var(--line)] flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <BookOpen className="w-4 h-4 text-[var(--accent)]" />
-            <h3 className="font-heading text-sm font-bold text-[var(--ink)]">
-              Student Project Teams & Milestone Progress ({filteredTeams.length})
-            </h3>
+      <div className="commons-card bg-white overflow-hidden p-0">
+        <div className="p-5 border-b-[1.5px] border-[#191A23] flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="tag-highlight font-heading text-sm font-bold">
+              Student Project Teams
+            </span>
+            <span className="text-xs text-[#6B7280] hidden sm:inline">
+              Milestone Progress ({filteredTeams.length} Active Crews)
+            </span>
           </div>
-          <span className="text-xs text-[var(--muted)] font-mono">
+          <span className="text-xs text-[#191A23] font-mono font-semibold">
             Direct two-way feedback loop
           </span>
         </div>

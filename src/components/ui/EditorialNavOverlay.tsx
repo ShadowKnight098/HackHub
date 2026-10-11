@@ -91,25 +91,20 @@ export const EditorialNavOverlay: React.FC<EditorialNavOverlayProps> = ({
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="relative w-full max-w-2xl sm:max-w-3xl lg:max-w-4xl h-full flex flex-col justify-between bg-[#14161c] text-[#efeae0] border-l border-[#2e323d] shadow-2xl overflow-y-auto select-none z-10"
-            style={{
-              backgroundImage:
-                'radial-gradient(color-mix(in srgb, #efeae0 6%, transparent) 1px, transparent 1.3px)',
-              backgroundSize: '22px 22px',
-            }}
+            className="relative w-full max-w-2xl sm:max-w-3xl lg:max-w-4xl h-full flex flex-col justify-between bg-[#191A23] text-white border-l-[1.5px] border-[#292A32] shadow-2xl overflow-y-auto select-none z-10"
           >
             {/* ── TOP HEADER (BRAND ON LEFT, CLOSE 'X' ON RIGHT) ──────── */}
-            <div className="w-full flex items-center justify-between px-6 sm:px-10 py-5 border-b border-[#2e323d]/70 bg-[#14161c]/90 backdrop-blur-md sticky top-0 z-20">
+            <div className="w-full flex items-center justify-between px-6 sm:px-10 py-5 border-b border-[#292A32] bg-[#191A23]/95 backdrop-blur-md sticky top-0 z-20">
               <div className="flex items-center gap-3">
-                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#e3c27d] to-[#d4b06a] flex items-center justify-center text-[#14161c] font-bold text-xs shadow-md">
+                <div className="w-8 h-8 rounded-lg bg-[#B9FF66] flex items-center justify-center text-[#191A23] font-bold text-sm shadow-md">
                   H
                 </div>
                 <div>
-                  <span className="font-heading text-lg font-bold tracking-tight text-[#efeae0]">
+                  <span className="font-heading text-lg font-bold tracking-tight text-white">
                     HackHub
                   </span>
-                  <span className="text-[11px] text-[#9a9ba5] ml-2 font-mono">
-                    Navigation
+                  <span className="text-[11px] text-[#B9FF66] ml-2 font-mono font-semibold">
+                    Digital Portal
                   </span>
                 </div>
               </div>
@@ -117,21 +112,21 @@ export const EditorialNavOverlay: React.FC<EditorialNavOverlayProps> = ({
               {/* Close Button on Right */}
               <button
                 onClick={onClose}
-                className="group flex items-center gap-2 p-1.5 rounded-lg text-[#9a9ba5] hover:text-[#efeae0] hover:bg-[#1c1f27] border border-transparent hover:border-[#2e323d] transition-all focus:outline-none"
+                className="group flex items-center gap-2 p-1.5 rounded-xl text-gray-400 hover:text-white transition-all focus:outline-none cursor-pointer"
                 aria-label="Close navigation"
               >
-                <span className="text-xs tracking-wider uppercase font-medium hidden sm:inline text-[#9a9ba5] group-hover:text-[#efeae0]">
+                <span className="text-xs tracking-wider uppercase font-medium hidden sm:inline text-gray-400 group-hover:text-white">
                   Close
                 </span>
-                <div className="w-8 h-8 rounded-full border border-[#2e323d] group-hover:border-[#d98a9a] flex items-center justify-center transition-colors">
-                  <X className="w-4 h-4 text-[#efeae0] group-hover:rotate-90 transition-transform duration-200" />
+                <div className="w-8 h-8 rounded-full border border-gray-700 group-hover:border-[#B9FF66] flex items-center justify-center transition-colors">
+                  <X className="w-4 h-4 text-white group-hover:text-[#B9FF66] group-hover:rotate-90 transition-transform duration-200" />
                 </div>
               </button>
             </div>
 
-            {/* ── BODY (EDITORIAL SPLIT WITH MATCHED PREVIOUS NAMES) ──── */}
+            {/* ── BODY ──── */}
             <div className="flex-1 px-6 sm:px-10 py-8 grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
-              {/* Primary Links Column (Matched Names) */}
+              {/* Primary Links Column */}
               <div className="md:col-span-8 flex flex-col justify-center">
                 <nav className="flex flex-col gap-1.5 sm:gap-2.5">
                   {PRIMARY_LINKS.map((item, index) => {
@@ -150,31 +145,31 @@ export const EditorialNavOverlay: React.FC<EditorialNavOverlayProps> = ({
                       >
                         <button
                           onClick={() => handleNavigate(item.path)}
-                          className="text-left w-full flex items-baseline justify-between py-1 transition-all"
+                          className="text-left w-full flex items-baseline justify-between py-1 transition-all cursor-pointer"
                         >
                           <div className="flex items-baseline gap-3">
                             <span
                               className={`font-heading text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight transition-all duration-200 ${
                                 isActive
-                                  ? 'text-[#efeae0] translate-x-1'
-                                  : 'text-[#9a9ba5]/50 group-hover:text-[#efeae0] group-hover:translate-x-1.5'
+                                  ? 'text-[#B9FF66] translate-x-1'
+                                  : 'text-gray-500 group-hover:text-white group-hover:translate-x-1.5'
                               }`}
                             >
                               {item.label}
                             </span>
 
                             {isActive && (
-                              <span className="w-2 h-2 rounded-full bg-[#d98a9a] inline-block animate-pulse shrink-0" />
+                              <span className="w-2.5 h-2.5 rounded-full bg-[#B9FF66] inline-block animate-pulse shrink-0" />
                             )}
                           </div>
 
                           <div className="flex items-center gap-2">
                             {item.badge && (
-                              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#7b2d3b]/40 text-[#d98a9a] border border-[#7b2d3b]">
+                              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#B9FF66] text-[#191A23] font-bold">
                                 {item.badge}
                               </span>
                             )}
-                            <span className="hidden sm:inline font-accent italic text-xs text-[#9a9ba5]/60 group-hover:text-[#d4b06a] transition-colors">
+                            <span className="hidden sm:inline text-xs text-gray-500 group-hover:text-[#B9FF66] transition-colors font-medium">
                               {item.sublabel}
                             </span>
                           </div>
@@ -192,11 +187,11 @@ export const EditorialNavOverlay: React.FC<EditorialNavOverlayProps> = ({
                     >
                       <button
                         onClick={() => handleNavigate('/admin')}
-                        className="text-left w-full flex items-center justify-between py-1"
+                        className="text-left w-full flex items-center justify-between py-1 cursor-pointer"
                       >
                         <div className="flex items-center gap-2">
-                          <ShieldAlert className="w-5 h-5 text-[#d4b06a]" />
-                          <span className="font-heading text-2xl sm:text-3xl font-bold text-[#d4b06a] group-hover:translate-x-1.5 transition-transform">
+                          <ShieldAlert className="w-5 h-5 text-[#B9FF66]" />
+                          <span className="font-heading text-2xl sm:text-3xl font-bold text-[#B9FF66] group-hover:translate-x-1.5 transition-transform">
                             Admin Panel
                           </span>
                         </div>
@@ -210,26 +205,26 @@ export const EditorialNavOverlay: React.FC<EditorialNavOverlayProps> = ({
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.25, duration: 0.3 }}
-                  className="mt-8 pt-6 border-t border-[#2e323d]/60 flex items-center gap-3"
+                  className="mt-8 pt-6 border-t border-[#292A32] flex items-center gap-3"
                 >
                   <button
                     onClick={() => handleNavigate('/teams')}
-                    className="group inline-flex items-center gap-2.5 text-sm sm:text-base font-heading text-[#efeae0] hover:text-[#d4b06a] transition-colors"
+                    className="group inline-flex items-center gap-2.5 text-sm sm:text-base font-heading text-white hover:text-[#B9FF66] transition-colors cursor-pointer"
                   >
-                    <span>Create or Join a Team</span>
-                    <div className="w-6 h-6 rounded-full bg-[#2e323d] group-hover:bg-[#7b2d3b] flex items-center justify-center transition-colors">
-                      <ArrowRight className="w-3.5 h-3.5 text-[#d98a9a] group-hover:text-white group-hover:translate-x-0.5 transition-transform" />
+                    <span>Create or Join a Project</span>
+                    <div className="w-7 h-7 rounded-full bg-[#292A32] group-hover:bg-[#B9FF66] flex items-center justify-center transition-colors">
+                      <ArrowRight className="w-3.5 h-3.5 text-[#B9FF66] group-hover:text-[#191A23] group-hover:translate-x-0.5 transition-transform" />
                     </div>
                   </button>
                 </motion.div>
               </div>
 
-              {/* Right Secondary Column (Editorial Details) */}
-              <div className="md:col-span-4 flex flex-col justify-start md:pl-6 md:border-l border-[#2e323d]/50">
-                {/* Accent Dash (From Reference) */}
-                <div className="w-8 h-1 bg-[#d98a9a] rounded-full mb-4" />
+              {/* Right Secondary Column */}
+              <div className="md:col-span-4 flex flex-col justify-start md:pl-6 md:border-l border-[#292A32]">
+                {/* Lime Accent Dash */}
+                <div className="w-8 h-1 bg-[#B9FF66] rounded-full mb-4" />
 
-                <p className="text-[10px] tracking-[0.2em] uppercase font-bold text-[#9a9ba5] mb-3">
+                <p className="text-[10px] tracking-[0.2em] uppercase font-bold text-gray-400 mb-3">
                   SHORTCUTS
                 </p>
 
@@ -238,23 +233,23 @@ export const EditorialNavOverlay: React.FC<EditorialNavOverlayProps> = ({
                     <button
                       key={sec.label}
                       onClick={() => handleNavigate(sec.path)}
-                      className="text-left py-1 group"
+                      className="text-left py-1 group cursor-pointer"
                     >
-                      <span className="text-xs tracking-[0.12em] uppercase font-medium text-[#9a9ba5] group-hover:text-[#efeae0] transition-colors">
+                      <span className="text-xs tracking-[0.12em] uppercase font-semibold text-gray-400 group-hover:text-[#B9FF66] transition-colors">
                         {sec.label}
                       </span>
                     </button>
                   ))}
                 </div>
 
-                {/* Live Hackathon Widget */}
-                <div className="mt-6 p-3.5 rounded-lg border border-[#2e323d] bg-[#1c1f27]">
-                  <div className="flex items-center gap-1.5 text-xs text-[#d4b06a] font-semibold mb-1">
-                    <Radio className="w-3 h-3 text-[#d98a9a] animate-pulse" />
-                    <span>Cohort Status</span>
+                {/* Status Widget */}
+                <div className="mt-6 p-4 rounded-2xl border border-[#292A32] bg-[#22232C]">
+                  <div className="flex items-center gap-1.5 text-xs text-[#B9FF66] font-semibold mb-1">
+                    <Radio className="w-3 h-3 text-[#B9FF66] animate-pulse" />
+                    <span>Supervision Live</span>
                   </div>
-                  <p className="text-[11px] text-[#9a9ba5] leading-relaxed">
-                    26h left • Tables 1–48 online. Mentors active at Helpdesk.
+                  <p className="text-[11px] text-gray-400 leading-relaxed">
+                    Faculty guides and milestone evaluation online across all project cohorts.
                   </p>
                 </div>
               </div>

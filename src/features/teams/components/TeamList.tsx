@@ -71,24 +71,24 @@ export const TeamList: React.FC = () => {
   return (
     <div className="flex flex-col gap-6 w-full select-none">
       {/* ── HEADER ─────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b-[1.5px] border-[#191A23]">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-xs font-semibold text-[var(--moss)] uppercase tracking-wider">
-              Live Command Matrix
+          <div className="flex items-center gap-2 mb-2">
+            <span className="tag-highlight text-[11px] font-mono uppercase">
+              Cohort Directory
             </span>
+            <span className="text-xs text-[#191A23] font-semibold">• {teams.length} Active Crews</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-heading font-bold text-[var(--ink)] tracking-tight">
+          <h1 className="text-2xl sm:text-4xl font-heading font-bold text-[#191A23] tracking-tight">
             Team Directory
           </h1>
-          <p className="text-xs sm:text-sm text-[var(--muted)] mt-0.5">
-            {teams.length} Active Crews forming across the venue floor
+          <p className="text-xs sm:text-sm text-[#6B7280] mt-1">
+            Explore student engineering groups, find teammates, or register your project crew.
           </p>
         </div>
 
         <button
-          className="commons-btn-primary shrink-0 flex items-center gap-1.5 shadow-sm"
+          className="commons-btn-primary shrink-0 flex items-center gap-1.5"
           onClick={() => setIsModalOpen(true)}
         >
           <Plus className="w-4 h-4 stroke-[2.5]" />
@@ -98,20 +98,20 @@ export const TeamList: React.FC = () => {
 
       {/* ── SEARCH & FILTER BAR ─────────────────────────────────────── */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-        {/* Search input with Linear-style syntax hint */}
+        {/* Search input */}
         <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 text-[var(--muted)] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Search className="w-4 h-4 text-[#6B7280] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             placeholder="Search teams, pitch keywords, table numbers..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-9 py-2 text-xs sm:text-sm rounded-xl border border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] placeholder:text-[var(--muted)] hover:border-[var(--accent)] focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] transition-all shadow-2xs font-mono"
+            className="w-full pl-10 pr-9 py-2.5 text-xs sm:text-sm rounded-[14px] border-[1.5px] border-[#191A23] bg-white text-[#191A23] placeholder:text-[#6B7280] focus:outline-none focus:ring-2 focus:ring-[#B9FF66] shadow-[0_2px_0_#191A23] font-mono"
           />
           {search && (
             <button
               onClick={() => setSearch('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-[var(--ink)] cursor-pointer"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6B7280] hover:text-[#191A23] cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -119,15 +119,15 @@ export const TeamList: React.FC = () => {
         </div>
 
         {/* Filter Chips */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
           {TRACK_CHIPS.map((chip) => (
             <button
               key={chip}
               onClick={() => setSelectedTrack(chip)}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+              className={`px-3.5 py-2 rounded-[12px] text-xs font-bold whitespace-nowrap transition-all cursor-pointer border-[1.5px] border-[#191A23] ${
                 selectedTrack === chip
-                  ? 'bg-[var(--accent)] text-white shadow-xs'
-                  : 'bg-[var(--surface)] text-[var(--muted)] border border-[var(--line)] hover:border-[var(--accent)] hover:text-[var(--ink)]'
+                  ? 'bg-[#191A23] text-[#B9FF66] shadow-[0_3px_0_#191A23]'
+                  : 'bg-white text-[#191A23] hover:bg-[#F3F3F3]'
               }`}
             >
               {chip}
@@ -142,19 +142,19 @@ export const TeamList: React.FC = () => {
           <Spinner size="lg" color="primary" label="Querying matrix..." />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-20 rounded-2xl border border-dashed border-[var(--line)] bg-[var(--surface)]/50">
-          <div className="w-12 h-12 rounded-2xl border border-[var(--line)] bg-[var(--bg)] flex items-center justify-center mx-auto mb-3 shadow-inner">
-            <Users className="w-6 h-6 text-[var(--muted)]" />
+        <div className="text-center py-20 rounded-[28px] border-[1.5px] border-dashed border-[#191A23] bg-[#F3F3F3]">
+          <div className="w-12 h-12 rounded-2xl border-[1.5px] border-[#191A23] bg-white flex items-center justify-center mx-auto mb-3 shadow-[0_3px_0_#191A23]">
+            <Users className="w-6 h-6 text-[#191A23]" />
           </div>
-          <h3 className="font-heading text-lg font-bold text-[var(--ink)] mb-1">No matching teams</h3>
-          <p className="text-xs text-[var(--muted)] max-w-sm mx-auto">
+          <h3 className="font-heading text-lg font-bold text-[#191A23] mb-1">No matching teams</h3>
+          <p className="text-xs text-[#6B7280] max-w-sm mx-auto">
             {search ? 'Try clearing filter criteria or search query.' : 'Be the first to register a new crew.'}
           </p>
         </div>
       ) : (
-        <div className="w-full rounded-2xl border border-[var(--line)] bg-[var(--surface)] overflow-hidden shadow-sm">
+        <div className="w-full commons-card p-0 bg-white overflow-hidden">
           {/* Table Header */}
-          <div className="hidden md:grid grid-cols-12 gap-3 px-5 py-3 border-b border-[var(--line)] bg-[var(--bg)]/70 text-[11px] font-mono font-semibold text-[var(--muted)] uppercase tracking-wider">
+          <div className="hidden md:grid grid-cols-12 gap-3 px-5 py-3.5 border-b-[1.5px] border-[#191A23] bg-[#F3F3F3] text-[11px] font-mono font-bold text-[#191A23] uppercase tracking-wider">
             <div className="col-span-1">Tag</div>
             <div className="col-span-3">Team / Project Name</div>
             <div className="col-span-2">Track Domain</div>

@@ -314,22 +314,21 @@ export const SharedPhotoGallery: React.FC = () => {
       <canvas ref={canvasRef} className="hidden" />
 
       {/* ── HEADER ──────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between gap-4 pb-3 border-b border-[var(--line)]">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 text-xs font-semibold text-[var(--moss)] mb-0.5">
-            <Camera className="w-3.5 h-3.5 text-[var(--accent)]" />
-            <span className="uppercase tracking-wider">Live Snapshots</span>
-          </div>
-          <h2 className="font-heading text-lg sm:text-xl text-[var(--ink)] truncate">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b-[1.5px] border-[#191A23]">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <span className="tag-highlight font-heading text-lg sm:text-xl font-bold">
             Team Photo Stream
-          </h2>
+          </span>
+          <p className="text-xs text-[#6B7280]">
+            Live cohort camera stream & workbench prototypes
+          </p>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2.5 shrink-0">
           {/* Quick Direct Camera Button */}
           <button
             onClick={() => openModal('camera')}
-            className="commons-btn-primary py-1.5 px-3 text-xs flex items-center gap-1.5 cursor-pointer"
+            className="commons-btn-primary py-2 px-3.5 text-xs flex items-center gap-1.5 cursor-pointer"
             title="Take photo directly from your camera"
           >
             <Camera className="w-3.5 h-3.5" />
@@ -340,7 +339,7 @@ export const SharedPhotoGallery: React.FC = () => {
           {/* Post from File Button */}
           <button
             onClick={() => openModal('upload')}
-            className="commons-btn-secondary py-1.5 px-2.5 text-xs flex items-center gap-1 cursor-pointer"
+            className="commons-btn-secondary py-2 px-3 text-xs flex items-center gap-1 cursor-pointer"
             title="Upload photo from disk"
           >
             <Upload className="w-3.5 h-3.5" />
@@ -469,8 +468,8 @@ export const SharedPhotoGallery: React.FC = () => {
                     setActiveIndex(index);
                   }
                 }}
-                className={`absolute w-[215px] sm:w-[280px] md:w-[320px] aspect-[3/4] rounded-[24px] sm:rounded-[28px] overflow-hidden cursor-grab active:cursor-grabbing group shadow-2xl transition-shadow select-none ${
-                  isCenter ? 'ring-2 ring-[var(--accent)]/40 shadow-[0_16px_40px_rgba(0,0,0,0.35)]' : ''
+                className={`absolute w-[215px] sm:w-[280px] md:w-[320px] aspect-[3/4] rounded-[24px] sm:rounded-[28px] overflow-hidden cursor-grab active:cursor-grabbing group shadow-2xl transition-shadow select-none border-[1.5px] border-[#191A23] ${
+                  isCenter ? 'ring-2 ring-[#B9FF66] shadow-[0_12px_0_#191A23]' : 'shadow-[0_6px_0_#191A23]'
                 }`}
                 style={{
                   transformOrigin: 'center center',

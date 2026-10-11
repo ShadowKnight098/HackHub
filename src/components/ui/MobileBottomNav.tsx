@@ -38,7 +38,7 @@ export const MobileBottomNav: React.FC = () => {
       aria-label="Mobile Navigation"
       className="md:hidden fixed bottom-4 left-4 right-4 max-w-sm mx-auto z-40 select-none pointer-events-auto"
     >
-      <div className="relative bg-[var(--surface)]/95 backdrop-blur-xl border border-[var(--line)] shadow-[0_12px_36px_rgba(20,24,40,0.14)] rounded-full px-3 py-2 flex items-center justify-around">
+      <div className="relative bg-[#191A23] text-white border-[1.5px] border-[#191A23] shadow-[0_6px_0_#000] rounded-full px-3 py-2 flex items-center justify-around">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
 
@@ -55,15 +55,15 @@ export const MobileBottomNav: React.FC = () => {
               >
                 {({ isActive }) => (
                   <>
-                    {/* Elevated Center Hero Circle (Matching reference design) */}
+                    {/* Elevated Center Hero Circle */}
                     <div className="relative">
-                      {/* Outer decorative ring */}
-                      <div className="w-14 h-14 rounded-full p-1 bg-[var(--surface)] ring-4 ring-[var(--surface)] shadow-[0_8px_20px_rgba(20,24,40,0.22)] flex items-center justify-center transition-all duration-300">
+                      {/* Outer ring */}
+                      <div className="w-14 h-14 rounded-full p-1 bg-[#FFFFFF] ring-4 ring-[#FFFFFF] shadow-[0_6px_0_#191A23] flex items-center justify-center transition-all duration-300">
                         <div
                           className={`w-full h-full rounded-full flex items-center justify-center transition-all duration-300 ${
                             isActive
-                              ? 'bg-[var(--accent)] text-white shadow-inner ring-2 ring-[var(--accent)]/40'
-                              : 'bg-[var(--ink)] text-[var(--surface)] group-hover:bg-[var(--accent)] group-hover:text-white'
+                              ? 'bg-[#B9FF66] text-[#191A23] shadow-inner ring-2 ring-[#191A23]'
+                              : 'bg-[#191A23] text-[#B9FF66] group-hover:bg-[#B9FF66] group-hover:text-[#191A23]'
                           }`}
                         >
                           <Icon className="w-6 h-6 transition-transform duration-300 group-hover:scale-110" />
@@ -74,17 +74,17 @@ export const MobileBottomNav: React.FC = () => {
                       {isActive && (
                         <motion.span
                           layoutId="activeCenterIndicator"
-                          className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[var(--accent)] ring-2 ring-[var(--surface)]"
+                          className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#B9FF66] ring-2 ring-[#191A23]"
                           transition={{ type: 'spring', stiffness: 380, damping: 25 }}
                         />
                       )}
                     </div>
 
                     <span
-                      className={`text-[10px] font-medium tracking-tight mt-1 transition-colors duration-200 ${
+                      className={`text-[10px] font-bold tracking-tight mt-1 transition-colors duration-200 ${
                         isActive
-                          ? 'text-[var(--accent)] font-semibold'
-                          : 'text-[var(--muted)] group-hover:text-[var(--ink)]'
+                          ? 'text-[#B9FF66]'
+                          : 'text-gray-400 group-hover:text-white'
                       }`}
                     >
                       {item.label}
@@ -102,7 +102,7 @@ export const MobileBottomNav: React.FC = () => {
               end={item.path === '/'}
               className={({ isActive }) =>
                 `flex-1 py-1 flex flex-col items-center justify-center group relative transition-all duration-200 active:scale-95 ${
-                  isActive ? 'text-[var(--accent)]' : 'text-[var(--muted)] hover:text-[var(--ink)]'
+                  isActive ? 'text-[#B9FF66]' : 'text-gray-400 hover:text-white'
                 }`
               }
             >
@@ -111,22 +111,22 @@ export const MobileBottomNav: React.FC = () => {
                   <div className="relative flex items-center justify-center">
                     <Icon
                       className={`w-5 h-5 transition-transform duration-200 ${
-                        isActive ? 'scale-110 stroke-[2.4]' : 'group-hover:scale-105 stroke-[1.8]'
+                        isActive ? 'scale-110 stroke-[2.4] text-[#B9FF66]' : 'group-hover:scale-105 stroke-[1.8]'
                       }`}
                     />
 
-                    {/* Badge count (e.g. chat messages) */}
+                    {/* Badge count */}
                     {item.badge && (
-                      <span className="absolute -top-1 -right-2 min-w-3.5 h-3.5 px-1 rounded-full bg-[var(--accent)] text-white text-[9px] font-bold flex items-center justify-center ring-2 ring-[var(--surface)] leading-none">
+                      <span className="absolute -top-1 -right-2 min-w-3.5 h-3.5 px-1 rounded-full bg-[#B9FF66] text-[#191A23] text-[9px] font-bold flex items-center justify-center ring-2 ring-[#191A23] leading-none">
                         {item.badge}
                       </span>
                     )}
 
-                    {/* Subtle active background glow */}
+                    {/* Active pill background */}
                     {isActive && (
                       <motion.div
                         layoutId="activeNavBackground"
-                        className="absolute inset--1.5 -z-10 rounded-full bg-[color-mix(in_srgb,var(--accent)_12%,transparent)]"
+                        className="absolute inset--1.5 -z-10 rounded-full bg-white/10"
                         transition={{ type: 'spring', stiffness: 350, damping: 25 }}
                       />
                     )}
@@ -134,7 +134,7 @@ export const MobileBottomNav: React.FC = () => {
 
                   <span
                     className={`text-[10px] tracking-tight mt-1 transition-colors duration-200 ${
-                      isActive ? 'font-semibold text-[var(--accent)]' : 'font-normal text-[var(--muted)] group-hover:text-[var(--ink)]'
+                      isActive ? 'font-bold text-[#B9FF66]' : 'font-normal text-gray-400 group-hover:text-white'
                     }`}
                   >
                     {item.label}

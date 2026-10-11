@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 
-type Theme = 'light' | 'dark';
+type Theme = 'positivus';
 
 interface ThemeContextType {
   theme: Theme;
@@ -9,33 +9,28 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: 'light',
+  theme: 'positivus',
   toggleTheme: () => {},
   setTheme: () => {},
 });
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    const saved = localStorage.getItem('hackhub-theme') as Theme | null;
-    if (saved === 'light' || saved === 'dark') return saved;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  });
-
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('hackhub-theme', theme);
-  }, [theme]);
+    // Purge any legacy theme overrides from localStorage
+    localStorage.removeItem('hackhub-theme');
+    document.documentElement.setAttribute('data-theme', 'positivus');
+  }, []);
 
   const toggleTheme = () => {
-    setThemeState((prev) => (prev === 'light' ? 'dark' : 'light'));
+    // Single theme locked as requested
   };
 
-  const setTheme = (t: Theme) => {
-    setThemeState(t);
+  const setTheme = () => {
+    // Single theme locked as requested
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
+    <ThemeContext.Provider value={{ theme: 'positivus', toggleTheme, setTheme }}>
       {children}
     </ThemeContext.Provider>
   );

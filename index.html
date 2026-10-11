@@ -5,22 +5,12 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>HackHub — Collaboration Platform</title>
-    <!-- Commons Theme Google Fonts: Fraunces, Hanken Grotesk, Cormorant Garamond -->
+    <!-- Positivus / Neo-Grotesque Theme Google Fonts: Space Grotesk & Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Hanken+Grotesk:wght@400;500;600&family=Cormorant+Garamond:ital,wght@1,600;1,700&display=swap" rel="stylesheet">
-    <script>
-      (function() {
-        var savedTheme = localStorage.getItem('hackhub-theme');
-        if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-          document.documentElement.setAttribute('data-theme', 'dark');
-        } else {
-          document.documentElement.setAttribute('data-theme', 'light');
-        }
-      })();
-    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   </head>
-  <body class="bg-ivory-grid text-[var(--ink)] antialiased selection:bg-[var(--accent)] selection:text-[var(--bg)]">
+  <body class="bg-[#FFFFFF] text-[#191A23] antialiased selection:bg-[#B9FF66] selection:text-[#191A23]">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

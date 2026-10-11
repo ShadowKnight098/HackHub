@@ -3,11 +3,9 @@ import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { EditorialNavOverlay } from './EditorialNavOverlay';
 import { MobileBottomNav } from './MobileBottomNav';
-import { useTheme } from '@/lib/theme';
-import { Sun, Moon, Menu } from 'lucide-react';
+import { Menu } from 'lucide-react';
 
 export const AppLayout: React.FC = () => {
-  const { theme, toggleTheme } = useTheme();
   const [navOverlayOpen, setNavOverlayOpen] = useState(false);
 
   return (
@@ -31,44 +29,30 @@ export const AppLayout: React.FC = () => {
           {/* Left Brand */}
           <div className="flex items-center gap-2.5">
             <div className="commons-logo-mark md:hidden">
-              <span className="font-heading font-bold text-xs text-[var(--surface)]">H</span>
+              <span className="font-heading font-bold text-xs">H</span>
             </div>
             <span className="font-heading font-bold text-base text-[var(--ink)] tracking-tight md:hidden">
               HackHub
             </span>
-            <span className="hidden md:inline font-accent italic text-xs text-[var(--muted)]">
-              Ivory & Burgundy Editorial Suite
-            </span>
+            <div className="hidden md:flex items-center gap-2">
+              <span className="font-heading font-bold text-sm text-[var(--ink)]">
+                HackHub
+              </span>
+              <span className="text-xs px-2 py-0.5 rounded-md bg-[#B9FF66] text-[#191A23] font-bold">
+                Platform
+              </span>
+            </div>
           </div>
 
-          {/* Right Action Controls: Theme + Awesome Editorial Menu Trigger */}
+          {/* Right Action Controls: Menu Trigger */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Quick theme button */}
-            <button
-              onClick={toggleTheme}
-              className="flex items-center gap-1.5 p-1.5 px-2.5 rounded-lg border border-[var(--line)] bg-[var(--surface)] text-xs text-[var(--muted)] hover:text-[var(--ink)] hover:border-[var(--sun)] transition-all shadow-sm"
-              title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
-            >
-              {theme === 'dark' ? (
-                <>
-                  <Sun className="w-3.5 h-3.5 text-[var(--sun)]" />
-                  <span className="hidden sm:inline">Light</span>
-                </>
-              ) : (
-                <>
-                  <Moon className="w-3.5 h-3.5 text-[var(--sky)]" />
-                  <span className="hidden sm:inline">Dark</span>
-                </>
-              )}
-            </button>
-
-            {/* Awesome Editorial Menu Trigger on the RIGHT (Desktop + Mobile) */}
+            {/* Menu Trigger Button */}
             <button
               onClick={() => setNavOverlayOpen(true)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--surface)] border border-[var(--line)] hover:border-[var(--accent)] hover:text-[var(--accent)] text-[var(--ink)] transition-all shadow-sm group"
+              className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#191A23] text-white hover:bg-[#B9FF66] hover:text-[#191A23] border border-[#191A23] transition-all shadow-[0_3px_0_#000] cursor-pointer group"
               aria-label="Open Navigation Menu"
             >
-              <Menu className="w-4 h-4 text-[var(--accent)] group-hover:rotate-90 transition-transform duration-200" />
+              <Menu className="w-4 h-4 text-[#B9FF66] group-hover:text-[#191A23] group-hover:rotate-90 transition-all duration-200" />
               <span className="text-xs font-semibold">Menu</span>
             </button>
           </div>
