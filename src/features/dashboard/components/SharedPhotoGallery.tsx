@@ -182,26 +182,7 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = ({ isDarkMo
     }, 3000);
   }, []);
 
-  // Smooth Auto-Carousel Timer (advances every 3.8 seconds on mobile)
-  useEffect(() => {
-    if (filteredPhotos.length <= 1) return;
-
-    const interval = setInterval(() => {
-      // Only auto-scroll when not paused and when on mobile/tablet view
-      if (isPausedRef.current || window.innerWidth >= 768) return;
-
-      setActiveMobileIndex((prev) => {
-        const next = (prev + 1) % filteredPhotos.length;
-        scrollToIndex(next);
-        return next;
-      });
-    }, 3800);
-
-    return () => {
-      clearInterval(interval);
-      if (pauseTimeoutRef.current) clearTimeout(pauseTimeoutRef.current);
-    };
-  }, [filteredPhotos.length, scrollToIndex]);
+  // No auto-carousel timer (manual browsing only)
 
   // Stop camera helper
   const stopCamera = useCallback(() => {

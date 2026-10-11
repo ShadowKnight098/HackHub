@@ -1,6 +1,8 @@
 import { neon, neonConfig } from '@neondatabase/serverless';
 import { env } from './env';
 
+// Suppress browser direct-query warning in development/prototyping
+neonConfig.disableWarningInBrowsers = true;
 neonConfig.fetchConnectionCache = true;
 
 const connectionString = env.databaseUrl;
