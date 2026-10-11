@@ -61,38 +61,37 @@ export const SharedPhotoGallery: React.FC = () => {
     : cachedLoc?.name || 'Main Venue Floor';
 
   const loadPhotos = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from('shared_photos')
-        .select(`
-          id,
-          url,
-          title,
-          caption,
-          table_number,
-          likes_count,
-          created_at,
-          uploader:uploader_id (
-            full_name,
-            avatar_url
-          ),
-          team:team_id (
-            name
-          )
-        `)
-        .order('created_at', { ascending: false });
+    // 1. Instantly display locally cached photos (0ms blocking time)
+    const stored = db.photos.getAll();
+    if (stored.length > 0) {
+      setDynamicPhotos(stored);
+    }
 
-      if (!error && data && data.length > 0) {
+    // 2. Fetch latest photos from Supabase in background with 2.5s safety timeout
+    try {
+      const fetchPromise = supabase
+        .from('shared_photos')
+        .select('id, url, title, caption, table_number, likes_count, created_at')
+        .order('created_at', { ascending: false })
+        .limit(24);
+
+      const timeoutPromise = new Promise<{ data: null; error: Error }>((_, reject) =>
+        setTimeout(() => reject(new Error('Supabase photos timeout')), 2500)
+      );
+
+      const result = await Promise.race([fetchPromise, timeoutPromise]);
+      const { data, error } = result as any;
+
+      if (!error && Array.isArray(data) && data.length > 0) {
         const mapped: SharedPhoto[] = data.map((item: any) => ({
           id: item.id,
           url: item.url,
           title: item.title || 'Team Snapshot',
           caption: item.caption || '',
-          teamName: item.team?.name || 'HackHub Team',
+          teamName: 'HackHub Team',
           tableNumber: item.table_number || 'Main Venue Floor',
           uploadedBy: {
-            name: item.uploader?.full_name || 'Participant',
-            avatarUrl: item.uploader?.avatar_url || undefined,
+            name: 'Participant',
           },
           tags: ['LIVE DEMO'],
           likes: item.likes_count || 0,
@@ -100,15 +99,11 @@ export const SharedPhotoGallery: React.FC = () => {
           createdAt: item.created_at ? item.created_at.slice(0, 10) : new Date().toISOString().slice(0, 10),
         }));
         setDynamicPhotos(mapped);
-        return;
       }
     } catch (err) {
-      console.warn('Failed to fetch shared photos from Supabase:', err);
+      // Non-blocking: gracefully fall back to local photos
+      console.warn('Supabase photos background fetch skipped:', err);
     }
-
-    // Fallback to local db if Supabase is offline or empty
-    const stored = db.photos.getAll();
-    setDynamicPhotos(stored);
   }, []);
 
   useEffect(() => {
@@ -356,10 +351,36 @@ export const SharedPhotoGallery: React.FC = () => {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        setNewUrl(reader.result);
-      }
+    reader.onload = (uploadEvent) => {
+      const srcResult = uploadEvent.target?.result;
+      if (typeof srcResult !== 'string') return;
+
+      // Automatically compress and resize raw camera photos to prevent blocking
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 1200;
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          setNewUrl(canvas.toDataURL('image/jpeg', 0.82));
+        } else {
+          setNewUrl(srcResult);
+        }
+      };
+      img.src = srcResult;
     };
     reader.readAsDataURL(file);
   };
@@ -510,23 +531,25 @@ export const SharedPhotoGallery: React.FC = () => {
             onTouchEnd={resumeCarousel}
             onMouseEnter={pauseCarousel}
             onMouseLeave={resumeCarousel}
-            className="flex md:grid md:grid-cols-2 lg:grid-cols-3 overflow-x-auto md:overflow-visible snap-x snap-mandatory md:snap-none gap-5 sm:gap-6 md:gap-7 pb-4 md:pb-0 scrollbar-none scroll-smooth touch-pan-x"
+            className="flex md:grid md:grid-cols-2 lg:grid-cols-3 overflow-x-auto md:overflow-visible snap-x snap-mandatory md:snap-none gap-4 sm:gap-6 pb-4 md:pb-0 scrollbar-none scroll-smooth touch-pan-x"
           >
             {filteredPhotos.map((photo) => (
               <div
                 key={photo.id}
                 onClick={() => setSelectedPhoto(photo)}
-                className="min-w-[85vw] sm:min-w-[340px] md:min-w-0 snap-center shrink-0 md:shrink flex flex-col group cursor-pointer"
+                className="w-[76vw] max-w-[320px] sm:w-[300px] md:w-auto md:max-w-none snap-center shrink-0 md:shrink flex flex-col group cursor-pointer"
               >
-                {/* Cover image container */}
-                <div className="relative aspect-[16/10] w-full rounded-[22px] overflow-hidden bg-[#F3F3F3] border-[1.5px] border-[#191A23] shadow-[0_4px_0_#191A23] group-hover:shadow-[0_6px_0_#191A23] group-hover:-translate-y-0.5 transition-all">
+                {/* Cover image container - Clean 4:3 natural camera aspect ratio (zero stretch) */}
+                <div className="relative aspect-[4/3] w-full rounded-[20px] overflow-hidden bg-[#F3F3F3] border-[1.5px] border-[#191A23] shadow-[0_4px_0_#191A23] group-hover:shadow-[0_6px_0_#191A23] group-hover:-translate-y-0.5 transition-all">
                   <img
                     src={photo.url}
                     alt={photo.title}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src =
-                        'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="250" viewBox="0 0 400 250" fill="%23f3f4f6"><rect width="400" height="250"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%239ca3af" font-family="sans-serif" font-size="14">Image unavailable</text></svg>';
+                        'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300" fill="%23f3f4f6"><rect width="400" height="300"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%239ca3af" font-family="sans-serif" font-size="14">Image unavailable</text></svg>';
                     }}
                   />
 
@@ -610,11 +633,11 @@ export const SharedPhotoGallery: React.FC = () => {
           <Modal
             isOpen={!!selectedPhoto}
             onClose={() => setSelectedPhoto(null)}
-            size="2xl"
+            size="3xl"
             backdrop="blur"
             placement="center"
             classNames={{
-              base: 'border-[1.5px] border-[#191A23] bg-white text-[#191A23] shadow-2xl rounded-[28px] overflow-hidden',
+              base: 'border-[1.5px] border-[#191A23] bg-white text-[#191A23] shadow-2xl rounded-[28px] overflow-hidden max-w-[94vw] sm:max-w-2xl',
               header: 'border-b-[1.5px] border-[#191A23] px-6 py-4 flex items-center justify-between bg-[#F3F3F3]',
               body: 'p-0',
               footer: 'border-t-[1.5px] border-[#191A23] px-6 py-4 bg-white',
@@ -633,11 +656,14 @@ export const SharedPhotoGallery: React.FC = () => {
               </ModalHeader>
 
               <ModalBody>
-                <div className="relative max-h-[70vh] bg-[#191A23] flex items-center justify-center overflow-hidden">
+                {/* Natural image viewport - preserves aspect ratio completely */}
+                <div className="relative min-h-[220px] max-h-[65vh] bg-[#12131A] flex items-center justify-center overflow-hidden p-3 sm:p-4">
                   <img
                     src={selectedPhoto.url}
                     alt={selectedPhoto.title}
-                    className="max-h-[70vh] w-auto object-contain mx-auto"
+                    loading="lazy"
+                    decoding="async"
+                    className="max-h-[60vh] max-w-full w-auto h-auto object-contain mx-auto rounded-lg shadow-sm"
                   />
                 </div>
 
