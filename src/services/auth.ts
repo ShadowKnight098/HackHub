@@ -1,14 +1,24 @@
-import { supabase } from '@/lib/supabase';
+import { sql, isNeonConfigured } from '@/lib/neon';
 import { db } from '@/lib/db';
 import type { Profile, SignInCredentials, SignUpCredentials } from '@/types/schemas/auth';
 import type { UserId } from '@/types/ids';
 import { UserRole } from '@/types/enums';
 
+const AUTH_STATE_LISTENERS: Array<(profile: Profile | null) => void> = [];
+
+function notifyAuthListeners(profile: Profile | null) {
+  AUTH_STATE_LISTENERS.forEach((listener) => {
+    try {
+      listener(profile);
+    } catch (e) {
+      console.warn('Auth listener notification warning:', e);
+    }
+  });
+}
+
 export const authService = {
   async getSession() {
     try {
-      const { data, error } = await supabase.auth.getSession();
-      if (!error && data?.session) return data.session;
       const stored = localStorage.getItem('hackhub_current_profile');
       if (stored) {
         const p = JSON.parse(stored);
@@ -21,128 +31,121 @@ export const authService = {
   },
 
   async getCurrentProfile(): Promise<Profile | null> {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        if (!error && data) {
-          return {
-            id: data.id as UserId,
-            email: data.email,
-            fullName: data.full_name,
-            avatarUrl: data.avatar_url,
-            bio: data.bio,
-            skills: data.skills || [],
-            role: data.role as UserRole,
-            departmentId: data.department_id,
-            createdAt: data.created_at,
-            updatedAt: data.updated_at,
-          };
-        }
-      }
-    } catch (err) {
-      console.warn('Supabase profile fetch fallback:', err);
-    }
-
     const stored = localStorage.getItem('hackhub_current_profile');
+    let localProfile: Profile | null = null;
     if (stored) {
       try {
-        return JSON.parse(stored) as Profile;
+        localProfile = JSON.parse(stored) as Profile;
       } catch {
         localStorage.removeItem('hackhub_current_profile');
       }
     }
 
-    return null;
+    if (isNeonConfigured && sql && localProfile?.id && /^[0-9a-f-]{36}$/i.test(localProfile.id)) {
+      try {
+        const rows = await sql`
+          SELECT id, email, full_name, avatar_url, bio, skills, role, department_id, created_at, updated_at
+          FROM profiles
+          WHERE id = ${localProfile.id}::uuid
+          LIMIT 1
+        `;
+
+        if (rows && rows.length > 0 && rows[0]) {
+          const row = rows[0] as any;
+          const updatedProfile: Profile = {
+            id: row.id as UserId,
+            email: row.email,
+            fullName: row.full_name,
+            avatarUrl: row.avatar_url,
+            bio: row.bio,
+            skills: row.skills || [],
+            role: (row.role as UserRole) || UserRole.STUDENT,
+            departmentId: row.department_id,
+            createdAt: row.created_at,
+            updatedAt: row.updated_at,
+          };
+          localStorage.setItem('hackhub_current_profile', JSON.stringify(updatedProfile));
+          return updatedProfile;
+        }
+      } catch (err) {
+        console.warn('Neon profile fetch notice:', err);
+      }
+    }
+
+    return localProfile;
   },
 
   async signIn(credentials: SignInCredentials): Promise<Profile> {
     const email = credentials.email.trim().toLowerCase();
-    const password = credentials.password || '';
+    const password = credentials.password?.trim() || '';
 
-    // 1. First verify against Supabase Auth
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+    // Query Neon PostgreSQL
+    if (isNeonConfigured && sql) {
+      try {
+        const rows = await sql`
+          SELECT id, email, full_name, avatar_url, bio, skills, role, department_id, created_at, updated_at, password_hash
+          FROM profiles
+          WHERE email = ${email}
+          LIMIT 1
+        `;
 
-      if (!error && data?.user) {
-        const liveProfile = await this.getCurrentProfile();
-        if (liveProfile) {
-          localStorage.setItem('hackhub_current_profile', JSON.stringify(liveProfile));
-          return liveProfile;
+        if (rows && rows.length > 0 && rows[0]) {
+          const row = rows[0] as any;
+          const profile: Profile = {
+            id: row.id as UserId,
+            email: row.email,
+            fullName: row.full_name,
+            avatarUrl: row.avatar_url,
+            bio: row.bio,
+            skills: row.skills || [],
+            role: (row.role as UserRole) || UserRole.STUDENT,
+            departmentId: row.department_id,
+            createdAt: row.created_at,
+            updatedAt: row.updated_at,
+          };
+
+          db.registeredProfiles.insert({
+            id: profile.id,
+            email: profile.email,
+            password,
+            fullName: profile.fullName,
+            role: profile.role,
+          });
+
+          localStorage.setItem('hackhub_current_profile', JSON.stringify(profile));
+          notifyAuthListeners(profile);
+          return profile;
         }
+      } catch (err) {
+        console.warn('Neon signIn query notice:', err);
       }
-    } catch (err) {
-      console.warn('Supabase auth check notice:', err);
     }
 
-    // 2. Check registered accounts in database
-    const registered = db.registeredProfiles.getByEmail(email);
-    if (registered) {
-      if (registered.password && registered.password !== password) {
-        throw new Error('Incorrect password. Please enter the password you registered with.');
+    // Local cached profiles
+    const existing = db.registeredProfiles.getByEmail(email);
+    if (existing) {
+      if (existing.password && password && existing.password !== password) {
+        throw new Error('Incorrect password. Please verify your credentials.');
       }
 
-      const verifiedProfile: Profile = {
-        id: registered.id as UserId,
-        email: registered.email,
-        fullName: registered.fullName,
+      const profile: Profile = {
+        id: existing.id as UserId,
+        email: existing.email,
+        fullName: existing.fullName,
         avatarUrl: null,
-        bio: registered.rollNumber ? `Roll No: ${registered.rollNumber}` : '',
+        bio: existing.rollNumber ? `Roll No: ${existing.rollNumber}` : null,
         skills: [],
-        role: (registered.role as UserRole) || UserRole.STUDENT,
+        role: existing.role as UserRole,
         departmentId: null,
-        createdAt: registered.createdAt || new Date().toISOString(),
+        createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
 
-      localStorage.setItem('hackhub_current_profile', JSON.stringify(verifiedProfile));
-      return verifiedProfile;
+      localStorage.setItem('hackhub_current_profile', JSON.stringify(profile));
+      notifyAuthListeners(profile);
+      return profile;
     }
 
-    // 3. Check public.profiles in Supabase database
-    try {
-      const { data: dbProfile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('email', email)
-        .maybeSingle();
-
-      if (dbProfile) {
-        const profile: Profile = {
-          id: dbProfile.id as UserId,
-          email: dbProfile.email,
-          fullName: dbProfile.full_name,
-          avatarUrl: dbProfile.avatar_url,
-          bio: dbProfile.bio,
-          skills: dbProfile.skills || [],
-          role: dbProfile.role as UserRole,
-          departmentId: dbProfile.department_id,
-          createdAt: dbProfile.created_at,
-          updatedAt: dbProfile.updated_at,
-        };
-
-        db.registeredProfiles.insert({
-          id: profile.id,
-          email: profile.email,
-          password,
-          fullName: profile.fullName,
-          role: profile.role,
-        });
-
-        localStorage.setItem('hackhub_current_profile', JSON.stringify(profile));
-        return profile;
-      }
-    } catch {}
-
-    // Account does not exist in any database
     throw new Error('No registered participant found with this email. Please register first.');
   },
 
@@ -154,8 +157,30 @@ export const authService = {
     const role = credentials.role || UserRole.STUDENT;
     const password = credentials.password?.trim() || '';
 
+    let generatedId = (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : ('usr-' + Math.random().toString(36).substring(2, 9))) as UserId;
+
+    if (isNeonConfigured && sql) {
+      try {
+        const rows = await sql`
+          INSERT INTO profiles (email, password_hash, full_name, role, bio)
+          VALUES (${email}, ${password}, ${name}, ${role}, ${bioText})
+          ON CONFLICT (email) DO UPDATE SET
+            full_name = EXCLUDED.full_name,
+            bio = EXCLUDED.bio,
+            updated_at = now()
+          RETURNING id, email, full_name, role, avatar_url, bio, skills, created_at, updated_at
+        `;
+
+        if (rows && rows.length > 0 && rows[0]) {
+          generatedId = (rows[0] as any).id as UserId;
+        }
+      } catch (err) {
+        console.warn('Neon DB user registration notice:', err);
+      }
+    }
+
     const newProfile: Profile = {
-      id: (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : ('usr-' + Math.random().toString(36).substring(2, 9))) as UserId,
+      id: generatedId,
       email,
       fullName: name,
       avatarUrl: null,
@@ -167,7 +192,6 @@ export const authService = {
       updatedAt: new Date().toISOString(),
     };
 
-    // Save account securely into database registeredProfiles
     db.registeredProfiles.insert({
       id: newProfile.id,
       email,
@@ -177,81 +201,26 @@ export const authService = {
       role,
     });
 
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: name,
-            roll_number: rollNo,
-            role: 'student',
-          },
-        },
-      });
-
-      if (error) {
-        console.warn('Supabase signUp API notice:', error.message);
-      }
-
-      if (data?.user) {
-        newProfile.id = data.user.id as UserId;
-        try {
-          await supabase.from('profiles').upsert({
-            id: data.user.id,
-            email,
-            full_name: name,
-            bio: bioText,
-            role: 'student',
-          }, { onConflict: 'id' });
-        } catch (upsertErr) {
-          console.warn('Public profiles upsert notice:', upsertErr);
-        }
-      } else {
-        // If Supabase Auth throttles signup (429 email rate limit),
-        // check if user's profile with this email already exists in profiles
-        try {
-          const { data: existing } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('email', email)
-            .maybeSingle();
-
-          if (existing?.id) {
-            newProfile.id = existing.id as UserId;
-            await supabase.from('profiles').update({
-              full_name: name,
-              bio: bioText,
-            }).eq('id', existing.id);
-          }
-        } catch {}
-      }
-    } catch (err) {
-      console.warn('Supabase signUp network exception (local profile active):', err);
-    }
-
     localStorage.setItem('hackhub_current_profile', JSON.stringify(newProfile));
+    notifyAuthListeners(newProfile);
     return newProfile;
   },
 
   async signOut(): Promise<void> {
-    try {
-      await supabase.auth.signOut();
-    } catch {}
     localStorage.removeItem('hackhub_current_profile');
     localStorage.removeItem('hackhub_mock_profile');
     localStorage.removeItem('hackhub_cached_location');
     sessionStorage.clear();
+    notifyAuthListeners(null);
   },
 
   onAuthStateChange(callback: (profile: Profile | null) => void) {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async () => {
-      const profile = await authService.getCurrentProfile().catch(() => null);
-      callback(profile);
-    });
+    AUTH_STATE_LISTENERS.push(callback);
+    authService.getCurrentProfile().then(callback).catch(() => callback(null));
 
     return () => {
-      subscription.unsubscribe();
+      const idx = AUTH_STATE_LISTENERS.indexOf(callback);
+      if (idx !== -1) AUTH_STATE_LISTENERS.splice(idx, 1);
     };
   },
 };

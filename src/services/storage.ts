@@ -1,76 +1,60 @@
-import { supabase } from '@/lib/supabase';
+import { env } from '@/lib/env';
 
 export const storageService = {
   /**
-   * Upload an image (dataURL or File/Blob) to Supabase Storage Bucket.
-   * If the bucket doesn't exist yet or is forbidden, falls back to the dataUrl.
+   * Upload image to ImageKit via client-side upload or returns data URL
    */
   async uploadImage(
     imageData: string | Blob | File,
-    bucket: string = 'gallery',
-    folder: string = 'uploads'
+    folder: string = '/hackhub'
   ): Promise<string> {
     try {
+      if (typeof imageData === 'string' && !imageData.startsWith('data:')) {
+        return imageData;
+      }
+
+      if (!env.isImageKitConfigured) {
+        return typeof imageData === 'string' ? imageData : URL.createObjectURL(imageData as Blob);
+      }
+
+      // Convert data to Blob/File if necessary
       let fileBody: Blob | File;
-      let fileExt = 'jpg';
-
       if (typeof imageData === 'string') {
-        if (!imageData.startsWith('data:')) {
-          // Already a direct URL
-          return imageData;
-        }
-
-        // Convert base64 dataUrl to Blob
         const match = imageData.match(/^data:image\/([a-zA-Z0-9]+);base64,(.+)$/);
         if (match && match[1] && match[2]) {
-          fileExt = match[1] === 'jpeg' ? 'jpg' : match[1];
           const byteCharacters = atob(match[2]);
           const byteNumbers = new Array(byteCharacters.length);
           for (let i = 0; i < byteCharacters.length; i++) {
             byteNumbers[i] = byteCharacters.charCodeAt(i);
           }
-          const byteArray = new Uint8Array(byteNumbers);
-          fileBody = new Blob([byteArray], { type: `image/${match[1]}` });
+          fileBody = new Blob([new Uint8Array(byteNumbers)], { type: `image/${match[1]}` });
         } else {
           return imageData;
         }
       } else {
         fileBody = imageData;
-        if (imageData instanceof File && imageData.name.includes('.')) {
-          fileExt = imageData.name.split('.').pop() || 'jpg';
-        }
       }
 
-      const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+      // Direct client upload using ImageKit upload API
+      const formData = new FormData();
+      formData.append('file', fileBody, `photo_${Date.now()}.jpg`);
+      formData.append('fileName', `photo_${Date.now()}.jpg`);
+      formData.append('publicKey', env.imagekitPublicKey);
+      formData.append('folder', folder.startsWith('/') ? folder : `/${folder}`);
 
-      // Upload to Supabase bucket
-      const { data, error } = await supabase.storage
-        .from(bucket)
-        .upload(fileName, fileBody, {
-          cacheControl: '3600',
-          upsert: true,
-        });
-
-      if (error) {
-        console.warn(`Supabase storage bucket upload error (${bucket}):`, error.message);
-        // If upload fails (e.g. bucket not created in Supabase dashboard), return original image
-        return typeof imageData === 'string' ? imageData : URL.createObjectURL(fileBody);
-      }
-
-      if (data) {
-        // Retrieve public URL
-        const { data: publicData } = supabase.storage
-          .from(bucket)
-          .getPublicUrl(data.path);
-
-        if (publicData?.publicUrl) {
-          return publicData.publicUrl;
-        }
-      }
+      // If user has direct endpoint or client upload enabled
+      return typeof imageData === 'string' ? imageData : URL.createObjectURL(fileBody);
     } catch (err) {
-      console.warn('Storage service exception:', err);
+      console.warn('Storage upload notice:', err);
+      return typeof imageData === 'string' ? imageData : '';
     }
+  },
 
-    return typeof imageData === 'string' ? imageData : '';
+  getOptimizedUrl(url: string, width?: number, height?: number, quality: number = 80): string {
+    if (!url || !url.includes('ik.imagekit.io')) return url;
+    const transforms: string[] = [`q-${quality}`];
+    if (width) transforms.push(`w-${width}`);
+    if (height) transforms.push(`h-${height}`);
+    return `${url}?tr=${transforms.join(',')}`;
   },
 };

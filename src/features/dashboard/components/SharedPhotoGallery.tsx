@@ -21,7 +21,7 @@ import { db, SharedPhoto } from '@/lib/db';
 import { useAuth } from '@/features/auth';
 import { useTeams } from '@/features/teams';
 import { storageService } from '@/services/storage';
-import { supabase } from '@/lib/supabase';
+import { sql, isNeonConfigured } from '@/lib/neon';
 
 const FILTER_TAGS = ['All', 'Live Demo', 'Prototype', 'Workshop', 'Keynote', 'Team'];
 
@@ -29,7 +29,7 @@ export interface SharedPhotoGalleryProps {
   isDarkMode?: boolean;
 }
 
-export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = () => {
+export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = ({ isDarkMode = false }) => {
   const { profile } = useAuth();
   const { teams } = useTeams();
 
@@ -71,42 +71,43 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = () => {
       setDynamicPhotos(stored);
     }
 
-    // 2. Fetch latest photos from Supabase in background with 2.5s safety timeout
-    try {
-      const fetchPromise = supabase
-        .from('shared_photos')
-        .select('id, url, title, caption, table_number, likes_count, created_at')
-        .order('created_at', { ascending: false })
-        .limit(24);
+    // 2. Fetch latest photos from Neon in background with 2.5s safety timeout
+    if (isNeonConfigured && sql) {
+      try {
+        const fetchPromise = sql`
+          SELECT id, url, title, caption, table_number, likes_count, created_at
+          FROM shared_photos
+          ORDER BY created_at DESC
+          LIMIT 24
+        `;
 
-      const timeoutPromise = new Promise<{ data: null; error: Error }>((_, reject) =>
-        setTimeout(() => reject(new Error('Supabase photos timeout')), 2500)
-      );
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Neon photos timeout')), 2500)
+        );
 
-      const result = await Promise.race([fetchPromise, timeoutPromise]);
-      const { data, error } = result as any;
+        const rows = (await Promise.race([fetchPromise, timeoutPromise])) as any[];
 
-      if (!error && Array.isArray(data) && data.length > 0) {
-        const mapped: SharedPhoto[] = data.map((item: any) => ({
-          id: item.id,
-          url: item.url,
-          title: item.title || 'Team Snapshot',
-          caption: item.caption || '',
-          teamName: 'HackHub Team',
-          tableNumber: item.table_number || 'Main Venue Floor',
-          uploadedBy: {
-            name: 'Participant',
-          },
-          tags: ['LIVE DEMO'],
-          likes: item.likes_count || 0,
-          likedByMe: false,
-          createdAt: item.created_at ? item.created_at.slice(0, 10) : new Date().toISOString().slice(0, 10),
-        }));
-        setDynamicPhotos(mapped);
+        if (Array.isArray(rows) && rows.length > 0) {
+          const mapped: SharedPhoto[] = rows.map((item: any) => ({
+            id: item.id,
+            url: item.url,
+            title: item.title || 'Team Snapshot',
+            caption: item.caption || '',
+            teamName: 'HackHub Team',
+            tableNumber: item.table_number || 'Main Venue Floor',
+            uploadedBy: {
+              name: 'Participant',
+            },
+            tags: ['LIVE DEMO'],
+            likes: item.likes_count || 0,
+            likedByMe: false,
+            createdAt: item.created_at ? String(item.created_at).slice(0, 10) : new Date().toISOString().slice(0, 10),
+          }));
+          setDynamicPhotos(mapped);
+        }
+      } catch (err) {
+        console.warn('Neon photos fetch skipped:', err);
       }
-    } catch (err) {
-      // Non-blocking: gracefully fall back to local photos
-      console.warn('Supabase photos background fetch skipped:', err);
     }
   }, []);
 
@@ -336,16 +337,17 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = () => {
         setSelectedPhoto({ ...selectedPhoto, likes: updated.likes, likedByMe: updated.likedByMe });
       }
 
-      // Sync like to Supabase if it is a persisted UUID row
-      try {
-        if (!id.startsWith('photo-')) {
-          await supabase
-            .from('shared_photos')
-            .update({ likes_count: updated.likes })
-            .eq('id', id);
+      // Sync like to Neon if it is a persisted UUID row
+      if (isNeonConfigured && sql && !id.startsWith('photo-')) {
+        try {
+          await sql`
+            UPDATE shared_photos
+            SET likes_count = ${updated.likes}
+            WHERE id = ${id}::uuid
+          `;
+        } catch (err) {
+          console.warn('Failed to update likes in Neon:', err);
         }
-      } catch (err) {
-        console.warn('Failed to update likes in Supabase:', err);
       }
     }
   };
@@ -394,7 +396,7 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = () => {
 
     setIsUploading(true);
     try {
-      const publicBucketUrl = await storageService.uploadImage(newUrl, 'gallery', 'photos');
+      const publicBucketUrl = await storageService.uploadImage(newUrl, '/gallery');
 
       const created: SharedPhoto = {
         id: `photo-${Date.now()}`,
@@ -417,19 +419,28 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = () => {
       db.photos.insert(created);
       setDynamicPhotos((prev) => [created, ...prev]);
 
-      // 2. Persist to Supabase shared_photos table
-      try {
-        await supabase.from('shared_photos').insert({
-          url: publicBucketUrl,
-          title: created.title,
-          caption: created.caption,
-          table_number: autoLocation,
-          uploader_id: profile?.id,
-          team_id: myTeam?.id,
-          likes_count: 1,
-        });
-      } catch (dbErr) {
-        console.warn('Failed to insert into Supabase shared_photos:', dbErr);
+      // 2. Persist to Neon PostgreSQL shared_photos table
+      if (isNeonConfigured && sql) {
+        try {
+          const uploaderId = profile?.id && /^[0-9a-f-]{36}$/i.test(profile.id) ? profile.id : null;
+          const teamId = myTeam?.id && /^[0-9a-f-]{36}$/i.test(myTeam.id) ? myTeam.id : null;
+
+          await sql`
+            INSERT INTO shared_photos (url, title, caption, table_number, uploader_id, team_id, likes_count, hackathon_id)
+            VALUES (
+              ${publicBucketUrl},
+              ${created.title},
+              ${created.caption},
+              ${autoLocation},
+              ${uploaderId ? sql`${uploaderId}::uuid` : null},
+              ${teamId ? sql`${teamId}::uuid` : null},
+              1,
+              '466eebd5-875f-423b-b1f1-10b93bebccf6'::uuid
+            )
+          `;
+        } catch (dbErr) {
+          console.warn('Neon shared_photos insert notice:', dbErr);
+        }
       }
 
       closeModal();
@@ -441,21 +452,39 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = () => {
   };
 
   return (
-    <div className="commons-card p-6 sm:p-7 bg-white border border-slate-200/90 shadow-sm flex flex-col gap-5">
+    <div
+      className={`p-6 sm:p-7 rounded-2xl border transition-all flex flex-col gap-5 ${
+        isDarkMode
+          ? 'bg-[#121522] border-white/10 text-white shadow-xl'
+          : 'commons-card bg-white border-slate-200/90 shadow-sm'
+      }`}
+    >
       {/* Hidden offscreen canvas for frame capture */}
       <canvas ref={canvasRef} className="hidden" />
 
       {/* ── HEADER & ACTIONS ────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+      <div
+        className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b ${
+          isDarkMode ? 'border-white/10' : 'border-slate-100'
+        }`}
+      >
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+          <div
+            className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+              isDarkMode ? 'bg-indigo-500/20 text-indigo-400' : 'bg-indigo-50 text-indigo-600'
+            }`}
+          >
             <Camera className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="font-heading text-base font-bold text-slate-900">
+            <h3
+              className={`font-heading text-base font-bold ${
+                isDarkMode ? 'text-white' : 'text-slate-900'
+              }`}
+            >
               Shared Photo Gallery
             </h3>
-            <p className="text-xs text-slate-500">
+            <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
               Keynote sessions, cohort milestones, prototypes, and team moments
             </p>
           </div>
@@ -474,7 +503,11 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = () => {
 
           <button
             onClick={() => openModal('upload')}
-            className="commons-btn-secondary py-2 px-3.5 text-xs flex items-center gap-1.5 cursor-pointer"
+            className={`py-2 px-3.5 text-xs font-semibold rounded-xl border flex items-center gap-1.5 cursor-pointer transition-colors ${
+              isDarkMode
+                ? 'bg-white/10 hover:bg-white/15 text-slate-200 border-white/15'
+                : 'commons-btn-secondary'
+            }`}
             title="Upload photo from disk"
           >
             <Upload className="w-3.5 h-3.5" />
@@ -492,6 +525,8 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = () => {
             className={`px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all cursor-pointer ${
               selectedTag === tag
                 ? 'bg-indigo-600 text-white shadow-xs'
+                : isDarkMode
+                ? 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80 hover:text-slate-900'
             }`}
           >
@@ -502,15 +537,31 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = () => {
 
       {/* ── IMAGE GALLERY (MOBILE HORIZONTAL TOUCH SCROLL & AUTO CAROUSEL / DESKTOP GRID) ──── */}
       {filteredPhotos.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 p-8 sm:p-12 text-center flex flex-col items-center justify-center gap-3 bg-slate-50/50">
-          <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-xs">
+        <div
+          className={`rounded-2xl border border-dashed p-8 sm:p-12 text-center flex flex-col items-center justify-center gap-3 ${
+            isDarkMode
+              ? 'border-white/15 bg-slate-900/50 text-slate-300'
+              : 'border-slate-200 bg-slate-50/50'
+          }`}
+        >
+          <div
+            className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-xs ${
+              isDarkMode
+                ? 'bg-indigo-500/20 border border-indigo-500/30 text-indigo-400'
+                : 'bg-indigo-50 border border-indigo-100 text-indigo-600'
+            }`}
+          >
             <Camera className="w-6 h-6" />
           </div>
           <div className="max-w-md">
-            <h4 className="font-heading text-base font-bold text-slate-900">
+            <h4
+              className={`font-heading text-base font-bold ${
+                isDarkMode ? 'text-white' : 'text-slate-900'
+              }`}
+            >
               No shared photos yet
             </h4>
-            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+            <p className={`text-xs mt-1 leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
               Be the first to share a moment! Snap photos of your team working, prototype demos, or venue highlights.
             </p>
           </div>
@@ -524,7 +575,11 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = () => {
             </button>
             <button
               onClick={() => openModal('upload')}
-              className="commons-btn-secondary py-2 px-4 text-xs flex items-center gap-2 cursor-pointer"
+              className={`py-2 px-4 text-xs font-semibold rounded-xl border flex items-center gap-2 cursor-pointer transition-colors ${
+                isDarkMode
+                  ? 'bg-white/10 hover:bg-white/15 text-slate-200 border-white/15'
+                  : 'commons-btn-secondary'
+              }`}
             >
               <Upload className="w-3.5 h-3.5" />
               <span>Upload Image</span>
@@ -546,10 +601,18 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = () => {
               <div
                 key={photo.id}
                 onClick={() => setSelectedPhoto(photo)}
-                className="w-[76vw] max-w-[320px] sm:w-[300px] md:w-auto md:max-w-none snap-center shrink-0 md:shrink flex flex-col group cursor-pointer bg-white rounded-2xl border border-slate-200/90 hover:border-slate-300 hover:shadow-md transition-all overflow-hidden p-3"
+                className={`w-[76vw] max-w-[320px] sm:w-[300px] md:w-auto md:max-w-none snap-center shrink-0 md:shrink flex flex-col group cursor-pointer rounded-2xl border transition-all overflow-hidden p-3 ${
+                  isDarkMode
+                    ? 'bg-[#151824] border-white/10 hover:border-indigo-500/50 hover:shadow-xl hover:shadow-indigo-500/10'
+                    : 'bg-white border-slate-200/90 hover:border-slate-300 hover:shadow-md'
+                }`}
               >
                 {/* Cover image container - Clean 4:3 natural camera aspect ratio */}
-                <div className="relative aspect-[4/3] w-full rounded-xl overflow-hidden bg-slate-100">
+                <div
+                  className={`relative aspect-[4/3] w-full rounded-xl overflow-hidden ${
+                    isDarkMode ? 'bg-slate-800' : 'bg-slate-100'
+                  }`}
+                >
                   <img
                     src={photo.url}
                     alt={photo.title}
@@ -566,13 +629,21 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = () => {
                   <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={(e) => handleToggleLike(photo.id, e)}
-                      className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-xs border border-slate-200 flex items-center justify-center hover:bg-white text-slate-700 transition-colors shadow-xs cursor-pointer"
+                      className={`w-8 h-8 rounded-full backdrop-blur-xs border flex items-center justify-center transition-colors shadow-xs cursor-pointer ${
+                        isDarkMode
+                          ? 'bg-slate-900/90 border-white/15 hover:bg-slate-800 text-slate-200'
+                          : 'bg-white/90 border-slate-200 hover:bg-white text-slate-700'
+                      }`}
                       title="Like photo"
                     >
                       <Heart className={`w-3.5 h-3.5 ${photo.likedByMe ? 'fill-rose-500 text-rose-500' : ''}`} />
                     </button>
                     <div
-                      className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-xs border border-slate-200 flex items-center justify-center hover:bg-white text-slate-700 transition-colors shadow-xs"
+                      className={`w-8 h-8 rounded-full backdrop-blur-xs border flex items-center justify-center transition-colors shadow-xs ${
+                        isDarkMode
+                          ? 'bg-slate-900/90 border-white/15 hover:bg-slate-800 text-slate-200'
+                          : 'bg-white/90 border-slate-200 hover:bg-white text-slate-700'
+                      }`}
                       title="View fullscreen"
                     >
                       <Maximize2 className="w-3.5 h-3.5" />
@@ -584,26 +655,50 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = () => {
                 <div className="flex flex-col mt-3 px-1">
                   {/* Pill & Date row */}
                   <div className="flex items-center justify-between">
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/80">
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                        isDarkMode
+                          ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                          : 'bg-indigo-50 text-indigo-700 border-indigo-200/80'
+                      }`}
+                    >
                       {photo.tags?.[0] || 'SNAPSHOT'}
                     </span>
-                    <span className="text-[11px] font-mono text-slate-400">
+                    <span
+                      className={`text-[11px] font-mono ${
+                        isDarkMode ? 'text-slate-400' : 'text-slate-400'
+                      }`}
+                    >
                       {photo.createdAt?.slice(0, 10) || 'Today'}
                     </span>
                   </div>
 
                   {/* Title */}
-                  <h3 className="font-heading font-bold text-sm leading-snug line-clamp-1 mt-1.5 text-slate-900 group-hover:text-indigo-600 transition-colors">
+                  <h3
+                    className={`font-heading font-bold text-sm leading-snug line-clamp-1 mt-1.5 transition-colors ${
+                      isDarkMode
+                        ? 'text-white group-hover:text-indigo-400'
+                        : 'text-slate-900 group-hover:text-indigo-600'
+                    }`}
+                  >
                     {photo.title}
                   </h3>
 
                   {/* Location & Likes row */}
-                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 text-xs text-slate-500">
+                  <div
+                    className={`flex items-center justify-between mt-2 pt-2 border-t text-xs ${
+                      isDarkMode ? 'border-white/10 text-slate-400' : 'border-slate-100 text-slate-500'
+                    }`}
+                  >
                     <div className="flex items-center gap-1 truncate text-[11px]">
                       <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
                       <span className="truncate">{photo.tableNumber || 'Venue Floor'}</span>
                     </div>
-                    <div className="flex items-center gap-1 text-[11px] font-medium text-slate-500 shrink-0">
+                    <div
+                      className={`flex items-center gap-1 text-[11px] font-medium shrink-0 ${
+                        isDarkMode ? 'text-slate-300' : 'text-slate-500'
+                      }`}
+                    >
                       <Heart className={`w-3 h-3 ${photo.likedByMe ? 'fill-rose-500 text-rose-500' : 'text-slate-400'}`} />
                       <span>{photo.likes || 0}</span>
                     </div>

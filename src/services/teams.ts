@@ -1,10 +1,9 @@
-import { supabase } from '@/lib/supabase';
-import { env } from '@/lib/env';
+import { sql, isNeonConfigured } from '@/lib/neon';
 import { db, DEFAULT_ACADEMIC_MILESTONES, DEFAULT_FACULTY_GUIDE } from '@/lib/db';
 import { AppError, ErrorCode } from '@/types/errors';
 import type { Team, CreateTeamInput, TeamMember, TeamMilestone } from '@/types/schemas/team';
 import type { TeamId, HackathonId, UserId } from '@/types/ids';
-import { TeamMemberRole, UserRole } from '@/types/enums';
+import { TeamMemberRole } from '@/types/enums';
 
 export const ACTIVE_HACKATHON_ID = '466eebd5-875f-423b-b1f1-10b93bebccf6';
 export const DEFAULT_USER_ID = '80bb5377-7cf9-49e2-b8d7-254193c7a16c';
@@ -16,46 +15,49 @@ export function toValidUuid(val: string | undefined | null, fallback: string): s
 }
 
 export const teamsService = {
-  async listTeams(hackathonId?: string): Promise<Team[]> {
-    let supabaseTeams: Team[] = [];
+  async listTeams(_hackathonId?: string): Promise<Team[]> {
+    let neonTeams: Team[] = [];
 
-    if (env.isConfigured) {
+    if (isNeonConfigured && sql) {
       try {
-        let query = supabase
-          .from('teams')
-          .select(`
-            id,
-            hackathon_id,
-            name,
-            description,
-            avatar_url,
-            table_number,
-            created_by,
-            created_at,
-            updated_at,
-            team_members (
-              id,
-              team_id,
-              user_id,
-              role,
-              joined_at,
-              profiles (
-                id,
-                full_name,
-                email,
-                avatar_url
-              )
-            )
-          `)
-          .order('created_at', { ascending: false });
+        const rows = await sql`
+          SELECT
+            t.id,
+            t.hackathon_id,
+            t.name,
+            t.description,
+            t.avatar_url,
+            t.table_number,
+            t.created_by,
+            t.created_at,
+            t.updated_at,
+            COALESCE(
+              json_agg(
+                json_build_object(
+                  'id', tm.id,
+                  'team_id', tm.team_id,
+                  'user_id', tm.user_id,
+                  'role', tm.role,
+                  'joined_at', tm.joined_at,
+                  'profile', json_build_object(
+                    'id', p.id,
+                    'full_name', p.full_name,
+                    'email', p.email,
+                    'avatar_url', p.avatar_url
+                  )
+                )
+              ) FILTER (WHERE tm.id IS NOT NULL),
+              '[]'
+            ) AS team_members
+          FROM teams t
+          LEFT JOIN team_members tm ON tm.team_id = t.id
+          LEFT JOIN profiles p ON p.id = tm.user_id
+          GROUP BY t.id
+          ORDER BY t.created_at DESC
+        `;
 
-        if (hackathonId && UUID_REGEX.test(hackathonId)) {
-          query = query.eq('hackathon_id', hackathonId);
-        }
-
-        const { data, error } = await query;
-        if (!error && data && data.length > 0) {
-          supabaseTeams = data.map((row: any): Team => ({
+        if (rows && rows.length > 0) {
+          neonTeams = rows.map((row: any): Team => ({
             id: row.id as TeamId,
             hackathonId: row.hackathon_id as HackathonId,
             name: row.name,
@@ -73,18 +75,18 @@ export const teamsService = {
               id: m.id,
               teamId: m.team_id as TeamId,
               userId: m.user_id as UserId,
-              role: m.role as TeamMemberRole,
+              role: (m.role === 'leader' || m.role === 'lead') ? TeamMemberRole.LEAD : TeamMemberRole.MEMBER,
               joinedAt: m.joined_at,
-              user: m.profiles ? {
-                id: m.profiles.id as UserId,
-                fullName: m.profiles.full_name,
-                email: m.profiles.email,
-                avatarUrl: m.profiles.avatar_url,
+              user: m.profile ? {
+                id: m.profile.id as UserId,
+                fullName: m.profile.full_name,
+                email: m.profile.email,
+                avatarUrl: m.profile.avatar_url,
               } : undefined,
             })),
           }));
 
-          supabaseTeams.forEach((t) => {
+          neonTeams.forEach((t) => {
             const existing = db.teams.getById(t.id);
             if (!existing) {
               db.teams.insert(t);
@@ -94,54 +96,60 @@ export const teamsService = {
           });
         }
       } catch (err) {
-        console.warn('Supabase teams exception, falling back to local db:', err);
+        console.warn('Neon teams query notice:', err);
       }
     }
 
-    // Merge Supabase teams with any locally registered teams
     const localTeams = db.teams.getAll();
     const mergedMap = new Map<string, Team>();
-
     localTeams.forEach((t) => mergedMap.set(t.id, t));
-    supabaseTeams.forEach((t) => mergedMap.set(t.id, t));
+    neonTeams.forEach((t) => mergedMap.set(t.id, t));
 
     return Array.from(mergedMap.values());
   },
 
   async getTeamById(teamId: TeamId): Promise<Team> {
-    // 1. If valid UUID and Supabase is configured, fetch live from Supabase
-    if (env.isConfigured && UUID_REGEX.test(teamId)) {
+    if (isNeonConfigured && sql && UUID_REGEX.test(teamId)) {
       try {
-        const { data, error } = await supabase
-          .from('teams')
-          .select(`
-            id,
-            hackathon_id,
-            name,
-            description,
-            avatar_url,
-            table_number,
-            created_by,
-            created_at,
-            updated_at,
-            team_members (
-              id,
-              team_id,
-              user_id,
-              role,
-              joined_at,
-              profiles (
-                id,
-                full_name,
-                email,
-                avatar_url
-              )
-            )
-          `)
-          .eq('id', teamId)
-          .single();
+        const rows = await sql`
+          SELECT
+            t.id,
+            t.hackathon_id,
+            t.name,
+            t.description,
+            t.avatar_url,
+            t.table_number,
+            t.created_by,
+            t.created_at,
+            t.updated_at,
+            COALESCE(
+              json_agg(
+                json_build_object(
+                  'id', tm.id,
+                  'team_id', tm.team_id,
+                  'user_id', tm.user_id,
+                  'role', tm.role,
+                  'joined_at', tm.joined_at,
+                  'profile', json_build_object(
+                    'id', p.id,
+                    'full_name', p.full_name,
+                    'email', p.email,
+                    'avatar_url', p.avatar_url
+                  )
+                )
+              ) FILTER (WHERE tm.id IS NOT NULL),
+              '[]'
+            ) AS team_members
+          FROM teams t
+          LEFT JOIN team_members tm ON tm.team_id = t.id
+          LEFT JOIN profiles p ON p.id = tm.user_id
+          WHERE t.id = ${teamId}::uuid
+          GROUP BY t.id
+          LIMIT 1
+        `;
 
-        if (!error && data) {
+        if (rows && rows.length > 0 && rows[0]) {
+          const data = rows[0] as any;
           const team: Team = {
             id: data.id as TeamId,
             hackathonId: data.hackathon_id as HackathonId,
@@ -160,13 +168,13 @@ export const teamsService = {
               id: m.id,
               teamId: m.team_id as TeamId,
               userId: m.user_id as UserId,
-              role: m.role as TeamMemberRole,
+              role: (m.role === 'leader' || m.role === 'lead') ? TeamMemberRole.LEAD : TeamMemberRole.MEMBER,
               joinedAt: m.joined_at,
-              user: m.profiles ? {
-                id: m.profiles.id as UserId,
-                fullName: m.profiles.full_name,
-                email: m.profiles.email,
-                avatarUrl: m.profiles.avatar_url,
+              user: m.profile ? {
+                id: m.profile.id as UserId,
+                fullName: m.profile.full_name,
+                email: m.profile.email,
+                avatarUrl: m.profile.avatar_url,
               } : undefined,
             })),
           };
@@ -175,15 +183,13 @@ export const teamsService = {
           return team;
         }
       } catch (err) {
-        console.warn('Supabase getTeamById exception, falling back to local search:', err);
+        console.warn('Neon getTeamById exception:', err);
       }
     }
 
-    // 2. Check local db
     const localTeam = db.teams.getById(teamId);
     if (localTeam) return localTeam;
 
-    // 3. Fallback search across all known teams
     const all = await this.listTeams().catch(() => db.teams.getAll());
     const matched = all.find((t) => t.id === teamId || t.name.toLowerCase() === teamId.toLowerCase());
     if (matched) return matched;
@@ -195,73 +201,70 @@ export const teamsService = {
     const validHackathonId = toValidUuid(input.hackathonId, ACTIVE_HACKATHON_ID);
     const validUserId = toValidUuid(userId, DEFAULT_USER_ID);
 
-    try {
-      const { data: teamData, error: teamError } = await supabase
-        .from('teams')
-        .insert({
-          name: input.name,
-          description: input.description || null,
-          table_number: input.tableNumber || null,
-          hackathon_id: validHackathonId,
-          created_by: validUserId,
-        })
-        .select()
-        .single();
+    if (isNeonConfigured && sql) {
+      try {
+        const teamRows = await sql`
+          INSERT INTO teams (name, description, table_number, hackathon_id, created_by)
+          VALUES (
+            ${input.name},
+            ${input.description || null},
+            ${input.tableNumber || null},
+            ${validHackathonId}::uuid,
+            ${validUserId}::uuid
+          )
+          RETURNING *
+        `;
 
-      if (teamError) {
-        console.warn('Supabase createTeam RLS notice (team saved to database):', teamError.message);
-      }
+        if (teamRows && teamRows.length > 0 && teamRows[0]) {
+          const teamData = teamRows[0] as any;
+          await sql`
+            INSERT INTO team_members (team_id, hackathon_id, user_id, role)
+            VALUES (${teamData.id}::uuid, ${validHackathonId}::uuid, ${validUserId}::uuid, 'leader')
+            ON CONFLICT DO NOTHING
+          `;
 
-      if (teamData) {
-        await supabase
-          .from('team_members')
-          .insert({
-            team_id: teamData.id,
-            user_id: validUserId,
-            role: 'lead',
-          });
+          let creatorProfile: any = null;
+          try {
+            const s = localStorage.getItem('hackhub_current_profile');
+            if (s) creatorProfile = JSON.parse(s);
+          } catch {}
 
-        let creatorProfile: any = null;
-        try {
-          const s = localStorage.getItem('hackhub_current_profile');
-          if (s) creatorProfile = JSON.parse(s);
-        } catch {}
-
-        const createdTeam: Team = {
-          id: teamData.id as TeamId,
-          hackathonId: teamData.hackathon_id as HackathonId,
-          name: teamData.name,
-          description: teamData.description,
-          avatarUrl: teamData.avatar_url,
-          tableNumber: teamData.table_number,
-          locationCoordinates: null,
-          createdBy: teamData.created_by as UserId,
-          createdAt: teamData.created_at,
-          updatedAt: teamData.updated_at,
-          milestones: DEFAULT_ACADEMIC_MILESTONES,
-          assignedFaculty: DEFAULT_FACULTY_GUIDE,
-          facultyReviews: [],
-          members: [
-            {
-              id: 'mem-' + teamData.id.slice(0, 8),
-              teamId: teamData.id as TeamId,
-              userId: validUserId as UserId,
-              role: TeamMemberRole.LEAD,
-              joinedAt: new Date().toISOString(),
-              user: {
-                id: validUserId as UserId,
-                fullName: creatorProfile?.fullName || 'Team Lead',
-                email: creatorProfile?.email || '',
+          const createdTeam: Team = {
+            id: teamData.id as TeamId,
+            hackathonId: teamData.hackathon_id as HackathonId,
+            name: teamData.name,
+            description: teamData.description,
+            avatarUrl: teamData.avatar_url,
+            tableNumber: teamData.table_number,
+            locationCoordinates: null,
+            createdBy: teamData.created_by as UserId,
+            createdAt: teamData.created_at,
+            updatedAt: teamData.updated_at,
+            milestones: DEFAULT_ACADEMIC_MILESTONES,
+            assignedFaculty: DEFAULT_FACULTY_GUIDE,
+            facultyReviews: [],
+            members: [
+              {
+                id: 'mem-' + String(teamData.id).slice(0, 8),
+                teamId: teamData.id as TeamId,
+                userId: validUserId as UserId,
+                role: TeamMemberRole.LEAD,
+                joinedAt: new Date().toISOString(),
+                user: {
+                  id: validUserId as UserId,
+                  fullName: creatorProfile?.fullName || 'Team Lead',
+                  email: creatorProfile?.email || '',
+                },
               },
-            },
-          ],
-        };
+            ],
+          };
 
-        db.teams.insert(createdTeam);
-        return createdTeam;
+          db.teams.insert(createdTeam);
+          return createdTeam;
+        }
+      } catch (err) {
+        console.warn('Neon createTeam notice:', err);
       }
-    } catch (err) {
-      console.warn('Supabase createTeam exception, synced to local db:', err);
     }
 
     let creatorProfile: any = null;
@@ -306,7 +309,6 @@ export const teamsService = {
   async joinTeam(teamId: TeamId, userId: UserId): Promise<void> {
     const validUserId = toValidUuid(userId, DEFAULT_USER_ID);
 
-    // 1. Immediately update local database state so user sees joined status
     const team = db.teams.getById(teamId);
     let currentUserProfile: any = null;
     try {
@@ -337,25 +339,26 @@ export const teamsService = {
       }
     }
 
-    // 2. If it is a Supabase team, sync with Supabase team_members
-    if (env.isConfigured && UUID_REGEX.test(teamId)) {
+    if (isNeonConfigured && sql && UUID_REGEX.test(teamId)) {
       try {
-        await supabase
-          .from('team_members')
-          .insert({
-            team_id: teamId,
-            user_id: validUserId,
-            role: 'member',
-          });
+        await sql`
+          INSERT INTO team_members (team_id, hackathon_id, user_id, role)
+          VALUES (
+            ${teamId}::uuid,
+            ${ACTIVE_HACKATHON_ID}::uuid,
+            ${validUserId}::uuid,
+            'member'
+          )
+          ON CONFLICT DO NOTHING
+        `;
       } catch (err) {
-        console.warn('Supabase joinTeam warning (local membership preserved):', err);
+        console.warn('Neon joinTeam notice:', err);
       }
     }
   },
 
   async leaveTeam(teamId: TeamId, userId: UserId): Promise<void> {
     const validUserId = toValidUuid(userId, DEFAULT_USER_ID);
-    // Remove from local individual teamMembers table
     db.teamMembers.delete(teamId, userId);
     db.teamMembers.delete(teamId, validUserId);
 
@@ -365,19 +368,74 @@ export const teamsService = {
       db.teams.update(teamId, { members: team.members });
     }
 
-    if (env.isConfigured && UUID_REGEX.test(teamId)) {
+    if (isNeonConfigured && sql && UUID_REGEX.test(teamId)) {
       try {
-        const { error } = await supabase
-          .from('team_members')
-          .delete()
-          .eq('team_id', teamId)
-          .eq('user_id', validUserId);
-
-        if (error) console.warn('Supabase leaveTeam warning:', error);
+        await sql`
+          DELETE FROM team_members
+          WHERE team_id = ${teamId}::uuid AND user_id = ${validUserId}::uuid
+        `;
       } catch (err) {
-        console.warn('Supabase leaveTeam exception:', err);
+        console.warn('Neon leaveTeam notice:', err);
       }
     }
+  },
+
+  async updateMilestone(
+    teamId: string | TeamId,
+    milestoneId: string,
+    updates: Partial<TeamMilestone>,
+    reviewRemarks?: { facultyName: string; remarks: string; score?: number }
+  ): Promise<TeamMilestone> {
+    const validTeamId = teamId as TeamId;
+    const team = await this.getTeamById(validTeamId);
+    const msIndex = team.milestones.findIndex((m) => m.id === milestoneId);
+    if (msIndex === -1) {
+      throw new AppError(ErrorCode.NOT_FOUND, 'Milestone not found');
+    }
+
+    const currentMilestone = team.milestones[msIndex]!;
+    const updated: TeamMilestone = {
+      ...currentMilestone,
+      ...updates,
+      status: updates.status || currentMilestone.status,
+      facultyRemarks: reviewRemarks?.remarks || updates.facultyRemarks || currentMilestone.facultyRemarks,
+      score: reviewRemarks?.score !== undefined ? reviewRemarks.score : (updates.score !== undefined ? updates.score : currentMilestone.score),
+      reviewedBy: reviewRemarks?.facultyName || updates.reviewedBy || currentMilestone.reviewedBy,
+    };
+    team.milestones[msIndex] = updated;
+    db.teams.update(validTeamId, { milestones: team.milestones });
+
+    if (isNeonConfigured && sql && UUID_REGEX.test(validTeamId)) {
+      try {
+        await sql`
+          UPDATE team_milestones
+          SET
+            status = COALESCE(${updated.status || null}, status),
+            submission_url = COALESCE(${updated.submissionUrl || null}, submission_url),
+            submission_notes = COALESCE(${updated.submissionNotes || null}, submission_notes),
+            score = COALESCE(${updated.score || null}, score),
+            faculty_remarks = COALESCE(${updated.facultyRemarks || null}, faculty_remarks)
+          WHERE team_id = ${validTeamId}::uuid AND id = ${milestoneId}::uuid
+        `;
+      } catch (err) {
+        console.warn('Neon milestone update notice:', err);
+      }
+    }
+
+    return updated;
+  },
+
+  async submitMilestone(
+    teamId: string | TeamId,
+    milestoneId: string,
+    submission: { submissionUrl: string; submissionNotes: string }
+  ): Promise<TeamMilestone> {
+    return this.updateMilestone(teamId as TeamId, milestoneId, {
+      submissionUrl: submission.submissionUrl,
+      submissionNotes: submission.submissionNotes,
+      status: 'pending_review',
+      submittedAt: new Date().toISOString(),
+    });
   },
 
   async addTeamMember(input: {
@@ -394,63 +452,43 @@ export const teamsService = {
 
     let userId: string = '';
 
-    if (env.isConfigured) {
+    if (isNeonConfigured && sql) {
       try {
-        // 1. Check if user already exists in profiles
-        const { data: existingProfile } = await supabase
-          .from('profiles')
-          .select('id, full_name, email, avatar_url')
-          .eq('email', email)
-          .maybeSingle();
+        const existingUsers = await sql`
+          SELECT id, full_name, email FROM profiles WHERE LOWER(email) = LOWER(${email}) LIMIT 1
+        `;
 
-        if (existingProfile) {
-          userId = existingProfile.id;
+        if (existingUsers && existingUsers.length > 0 && existingUsers[0]) {
+          userId = (existingUsers[0] as any).id;
         } else {
-          // 2. Create user with admin createUser
-          const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
-            email,
-            password,
-            email_confirm: true,
-            user_metadata: { full_name: fullName, role: 'student' },
-          });
-
-          if (!authError && authUser?.user) {
-            userId = authUser.user.id;
-          } else {
-            const { data: userList } = await supabase.auth.admin.listUsers();
-            const matched = userList?.users?.find((u) => u.email?.toLowerCase() === email);
-            userId = matched?.id || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : DEFAULT_USER_ID);
+          const insertedUsers = await sql`
+            INSERT INTO profiles (email, password_hash, full_name, role)
+            VALUES (${email}, ${password}, ${fullName}, 'student')
+            RETURNING id
+          `;
+          if (insertedUsers && insertedUsers.length > 0 && insertedUsers[0]) {
+            userId = (insertedUsers[0] as any).id;
           }
-
-          // 3. Upsert into profiles
-          await supabase.from('profiles').upsert({
-            id: userId,
-            email,
-            full_name: fullName,
-            role: 'student',
-          });
         }
 
-        // 4. Insert into team_members
-        const { data: memData, error: memError } = await supabase
-          .from('team_members')
-          .insert({
-            team_id: input.teamId,
-            user_id: userId,
-            role,
-          })
-          .select()
-          .single();
-
-        if (memError) {
-          console.warn('team_members insert error:', memError.message);
+        let memData: any = null;
+        if (userId) {
+          const insertedMembers = await sql`
+            INSERT INTO team_members (team_id, hackathon_id, user_id, role)
+            VALUES (${input.teamId}::uuid, ${ACTIVE_HACKATHON_ID}::uuid, ${userId}::uuid, ${role === 'lead' ? 'leader' : 'member'})
+            ON CONFLICT (team_id, user_id) DO UPDATE SET role = EXCLUDED.role
+            RETURNING id, team_id, user_id, role, joined_at
+          `;
+          if (insertedMembers && insertedMembers.length > 0 && insertedMembers[0]) {
+            memData = insertedMembers[0];
+          }
         }
 
         const newMember: TeamMember = {
           id: memData?.id || ('mem-' + Math.random().toString(36).substring(2, 7)),
           teamId: input.teamId,
           userId: userId as UserId,
-          role: role as TeamMemberRole,
+          role: role === 'lead' ? TeamMemberRole.LEAD : TeamMemberRole.MEMBER,
           joinedAt: memData?.joined_at || new Date().toISOString(),
           user: {
             id: userId as UserId,
@@ -467,19 +505,19 @@ export const teamsService = {
 
         return newMember;
       } catch (err) {
-        console.warn('Supabase addTeamMember exception, falling back to local:', err);
+        console.warn('Neon addTeamMember notice:', err);
       }
     }
 
-    userId = 'usr-' + Math.random().toString(36).substring(2, 9);
+    const mockId = (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : ('usr-' + Math.random().toString(36).substring(2, 7))) as UserId;
     const newMember: TeamMember = {
       id: 'mem-' + Math.random().toString(36).substring(2, 7),
       teamId: input.teamId,
-      userId: userId as UserId,
-      role: role as TeamMemberRole,
+      userId: mockId,
+      role: role === 'lead' ? TeamMemberRole.LEAD : TeamMemberRole.MEMBER,
       joinedAt: new Date().toISOString(),
       user: {
-        id: userId as UserId,
+        id: mockId,
         fullName,
         email,
       },
@@ -494,51 +532,58 @@ export const teamsService = {
     return newMember;
   },
 
-  async updateMilestone(
-    teamId: string,
-    milestoneId: string,
-    updates: Partial<TeamMilestone>,
-    reviewRemarks?: { facultyName: string; remarks: string; score?: number }
-  ): Promise<Team> {
-    const updated = db.teams.updateMilestone(teamId, milestoneId, updates, reviewRemarks);
-    if (!updated) {
-      throw new AppError(ErrorCode.NOT_FOUND, 'Team not found');
-    }
+  async updateTableNumber(teamId: TeamId, tableNumber: string): Promise<Team> {
+    const team = await this.getTeamById(teamId);
+    team.tableNumber = tableNumber;
+    db.teams.update(teamId, { tableNumber });
 
-    // Automatically post announcement notification if review remarks were added
-    if (reviewRemarks && reviewRemarks.remarks.trim()) {
+    if (isNeonConfigured && sql && UUID_REGEX.test(teamId)) {
       try {
-        db.announcements.insert({
-          id: `ann-${Date.now()}` as any,
-          hackathonId: updated.hackathonId,
-          authorId: 'fac-1' as any,
-          title: `Faculty Review: ${updated.name}`,
-          content: `${reviewRemarks.facultyName} updated ${updates.status === 'approved' ? '✅ Approved' : updates.status === 'needs_revision' ? '⚠️ Needs Revision' : 'ℹ️ Status'} for ${updates.title || 'milestone'}. Remarks: "${reviewRemarks.remarks}"`,
-          isUrgent: updates.status === 'needs_revision',
-          author: {
-            id: 'fac-1' as any,
-            fullName: reviewRemarks.facultyName,
-            role: UserRole.FACULTY,
-          },
-          createdAt: new Date().toISOString(),
-        });
-      } catch (e) {
-        console.warn('Failed to insert review announcement:', e);
+        await sql`
+          UPDATE teams
+          SET table_number = ${tableNumber}
+          WHERE id = ${teamId}::uuid
+        `;
+      } catch (err) {
+        console.warn('Neon table update notice:', err);
       }
     }
 
-    return updated;
+    return team;
   },
 
-  async submitMilestone(
-    teamId: string,
-    milestoneId: string,
-    submission: { submissionUrl: string; submissionNotes: string }
-  ): Promise<Team> {
-    const updated = db.teams.submitMilestone(teamId, milestoneId, submission);
-    if (!updated) {
-      throw new AppError(ErrorCode.NOT_FOUND, 'Team not found');
+  async updateProject(
+    teamId: TeamId,
+    project: {
+      name?: string;
+      projectTitle?: string;
+      projectDescription?: string;
+      repoUrl?: string;
+      demoUrl?: string;
     }
-    return updated;
+  ): Promise<Team> {
+    const team = await this.getTeamById(teamId);
+    if (project.name) team.name = project.name;
+    db.teams.update(teamId, team);
+
+    if (isNeonConfigured && sql && UUID_REGEX.test(teamId)) {
+      try {
+        await sql`
+          UPDATE teams
+          SET
+            name = COALESCE(${project.name || null}, name),
+            project_title = COALESCE(${project.projectTitle || null}, project_title),
+            project_description = COALESCE(${project.projectDescription || null}, project_description),
+            repo_url = COALESCE(${project.repoUrl || null}, repo_url),
+            demo_url = COALESCE(${project.demoUrl || null}, demo_url),
+            updated_at = now()
+          WHERE id = ${teamId}::uuid
+        `;
+      } catch (err) {
+        console.warn('Neon project update notice:', err);
+      }
+    }
+
+    return team;
   },
 };

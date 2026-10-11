@@ -151,9 +151,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpenMobile = false, onCloseM
                 >
                   {({ isActive }) => (
                     <>
+                      {isActive && (
+                        <motion.div
+                          layoutId="sidebar-active-pill"
+                          className="absolute inset-0 bg-indigo-50 border border-indigo-200/80 rounded-xl -z-10 shadow-2xs"
+                          transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                        />
+                      )}
                       <Icon
-                        className={`w-[18px] h-[18px] shrink-0 transition-colors ${
-                          isActive ? 'text-indigo-600' : 'text-slate-400 group-hover:text-slate-600'
+                        className={`w-[18px] h-[18px] shrink-0 transition-transform group-hover:scale-110 duration-200 ${
+                          isActive ? 'text-indigo-600' : 'text-slate-400 group-hover:text-slate-700'
                         }`}
                       />
                       {!collapsed && (
@@ -170,7 +177,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpenMobile = false, onCloseM
                         <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-indigo-600" />
                       )}
                       {isActive && (
-                        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r bg-indigo-600" />
+                        <motion.span
+                          layoutId="sidebar-active-bar"
+                          className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r bg-indigo-600"
+                          transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                        />
                       )}
                     </>
                   )}
