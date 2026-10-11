@@ -71,6 +71,8 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = ({ isDarkMo
       setDynamicPhotos(stored);
     }
 
+    const fetchedItems: SharedPhoto[] = [];
+
     // 2. Fetch latest photos from Neon in background with 2.5s safety timeout
     if (isNeonConfigured && sql) {
       try {
@@ -103,13 +105,53 @@ export const SharedPhotoGallery: React.FC<SharedPhotoGalleryProps> = ({ isDarkMo
             likedByMe: false,
             createdAt: item.created_at ? String(item.created_at).slice(0, 10) : new Date().toISOString().slice(0, 10),
           }));
-          setDynamicPhotos(mapped);
+          fetchedItems.push(...mapped);
         }
       } catch (err) {
         console.warn('Neon photos fetch skipped:', err);
       }
     }
-  }, []);
+
+    // 3. Directly load photos from ImageKit Media Library
+    try {
+      const ikFiles = await storageService.listFiles('/hackhub-photos', 30);
+      if (Array.isArray(ikFiles) && ikFiles.length > 0) {
+        const ikMapped: SharedPhoto[] = ikFiles
+          .filter((f) => !f.name.includes('test_pixel') && !f.name.includes('client_test'))
+          .map((f, idx) => ({
+            id: f.fileId || `ik-${idx}`,
+            url: f.url,
+            title: `${autoTeam} Snapshot`,
+            caption: `Captured on event floor`,
+            teamName: autoTeam,
+            tableNumber: autoLocation,
+            uploadedBy: {
+              name: 'Participant',
+            },
+            tags: ['LIVE DEMO'],
+            likes: 1,
+            likedByMe: false,
+            createdAt: f.createdAt ? f.createdAt.slice(0, 10) : new Date().toISOString().slice(0, 10),
+          }));
+        fetchedItems.push(...ikMapped);
+      }
+    } catch (ikErr) {
+      console.warn('ImageKit fetch notice:', ikErr);
+    }
+
+    const seen = new Set<string>();
+    const merged: SharedPhoto[] = [];
+    for (const p of [...fetchedItems, ...stored]) {
+      if (!seen.has(p.id) && !seen.has(p.url)) {
+        seen.add(p.id);
+        seen.add(p.url);
+        merged.push(p);
+      }
+    }
+    if (merged.length > 0) {
+      setDynamicPhotos(merged);
+    }
+  }, [autoTeam, autoLocation]);
 
   useEffect(() => {
     loadPhotos();

@@ -60,13 +60,15 @@ export const HeroPhotoBanner: React.FC = () => {
     ? `Table ${myTeam.tableNumber}`
     : cachedLoc?.name || 'Main Venue Floor';
 
-  // ── LOAD DYNAMIC PHOTOS (LOCAL DB + NEON POSTGRES) ──────────────────────────
+  // ── LOAD DYNAMIC PHOTOS (LOCAL DB + NEON POSTGRES + IMAGEKIT LIBRARY) ─────
   const loadPhotos = useCallback(async () => {
     // 1. Immediately load local photos
     const localPhotos = db.photos.getAll();
     if (localPhotos.length > 0) {
       setPhotos(localPhotos);
     }
+
+    const fetchedItems: SharedPhoto[] = [];
 
     // 2. Fetch from Neon PostgreSQL
     if (isNeonConfigured && sql) {
@@ -96,24 +98,54 @@ export const HeroPhotoBanner: React.FC = () => {
               ? String(item.created_at).slice(0, 10)
               : new Date().toISOString().slice(0, 10),
           }));
-
-          // Merge without duplicates
-          const seen = new Set<string>();
-          const merged: SharedPhoto[] = [];
-          for (const p of [...mapped, ...localPhotos]) {
-            if (!seen.has(p.id) && !seen.has(p.url)) {
-              seen.add(p.id);
-              seen.add(p.url);
-              merged.push(p);
-            }
-          }
-          setPhotos(merged);
+          fetchedItems.push(...mapped);
         }
       } catch (err) {
         console.warn('Neon photos fetch notice:', err);
       }
     }
-  }, [autoTeam]);
+
+    // 3. Directly load photos uploaded to ImageKit media library
+    try {
+      const ikFiles = await storageService.listFiles('/hackhub-photos', 30);
+      if (Array.isArray(ikFiles) && ikFiles.length > 0) {
+        const ikMapped: SharedPhoto[] = ikFiles
+          .filter((f) => !f.name.includes('test_pixel') && !f.name.includes('client_test'))
+          .map((f, idx) => ({
+            id: f.fileId || `ik-${idx}`,
+            url: f.url,
+            title: `${autoTeam} Snapshot`,
+            caption: `Captured on event floor`,
+            teamName: autoTeam,
+            tableNumber: autoLocation,
+            uploadedBy: {
+              name: 'Participant',
+            },
+            tags: ['LIVE'],
+            likes: 1,
+            likedByMe: false,
+            createdAt: f.createdAt ? f.createdAt.slice(0, 10) : new Date().toISOString().slice(0, 10),
+          }));
+        fetchedItems.push(...ikMapped);
+      }
+    } catch (ikErr) {
+      console.warn('ImageKit files fetch notice:', ikErr);
+    }
+
+    // Merge without duplicates
+    const seen = new Set<string>();
+    const merged: SharedPhoto[] = [];
+    for (const p of [...fetchedItems, ...localPhotos]) {
+      if (!seen.has(p.id) && !seen.has(p.url)) {
+        seen.add(p.id);
+        seen.add(p.url);
+        merged.push(p);
+      }
+    }
+    if (merged.length > 0) {
+      setPhotos(merged);
+    }
+  }, [autoTeam, autoLocation]);
 
   useEffect(() => {
     loadPhotos();
@@ -293,8 +325,9 @@ export const HeroPhotoBanner: React.FC = () => {
           const uploaderId = profile?.id && /^[0-9a-f-]{36}$/i.test(profile.id) ? profile.id : null;
           const teamId = myTeam?.id && /^[0-9a-f-]{36}$/i.test(myTeam.id) ? myTeam.id : null;
 
+          const hackathonId = '466eebd5-875f-423b-b1f1-10b93bebccf6';
           await sql`
-            INSERT INTO shared_photos (url, title, caption, table_number, uploader_id, team_id, likes_count)
+            INSERT INTO shared_photos (url, title, caption, table_number, uploader_id, team_id, likes_count, hackathon_id)
             VALUES (
               ${newPhoto.url},
               ${newPhoto.title},
@@ -302,7 +335,8 @@ export const HeroPhotoBanner: React.FC = () => {
               ${newPhoto.tableNumber},
               ${uploaderId ? sql`${uploaderId}::uuid` : null},
               ${teamId ? sql`${teamId}::uuid` : null},
-              1
+              1,
+              ${hackathonId}::uuid
             )
           `;
         } catch (dbErr) {

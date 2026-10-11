@@ -93,6 +93,42 @@ export const storageService = {
     }
   },
 
+  /**
+   * Fetch uploaded images directly from ImageKit Media Library
+   */
+  async listFiles(path: string = '/hackhub-photos', limit: number = 30): Promise<Array<{ fileId: string; name: string; url: string; createdAt: string; filePath: string }>> {
+    try {
+      const privKey = env.imagekitPrivateKey;
+      if (!privKey) return [];
+
+      const authHeader = 'Basic ' + btoa(`${privKey}:`);
+      const cleanPath = path.startsWith('/') ? path : `/${path}`;
+      const res = await fetch(`https://api.imagekit.io/v1/files?path=${encodeURIComponent(cleanPath)}&limit=${limit}&sort=DESC_CREATED`, {
+        headers: {
+          Authorization: authHeader,
+        },
+      });
+
+      if (!res.ok) {
+        // Fallback without path filter if specific path query fails
+        const fallbackRes = await fetch(`https://api.imagekit.io/v1/files?limit=${limit}&sort=DESC_CREATED`, {
+          headers: {
+            Authorization: authHeader,
+          },
+        });
+        if (!fallbackRes.ok) return [];
+        const files = await fallbackRes.json();
+        return Array.isArray(files) ? files.filter((f: any) => f.fileType === 'image') : [];
+      }
+
+      const files = await res.json();
+      return Array.isArray(files) ? files.filter((f: any) => f.fileType === 'image') : [];
+    } catch (err) {
+      console.warn('ImageKit listFiles failed:', err);
+      return [];
+    }
+  },
+
   getOptimizedUrl(url: string, width?: number, height?: number, quality: number = 80): string {
     if (!url || !url.includes('ik.imagekit.io')) return url;
     const transforms: string[] = [`q-${quality}`];
