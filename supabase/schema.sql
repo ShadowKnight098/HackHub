@@ -219,6 +219,9 @@ CREATE TABLE IF NOT EXISTS public.shared_photos (
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now())
 );
 
+-- Relax not-null constraint on email to prevent 23502 errors if auth.users has null emails
+ALTER TABLE public.profiles ALTER COLUMN email DROP NOT NULL;
+
 -- 4. AUTOMATIC AUTH USER TRIGGER & BACKFILL (CRITICAL: Fixes 406 Error)
 -- Whenever a user signs up/in via Supabase Auth, auto-insert their profile in public.profiles!
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -227,13 +230,13 @@ BEGIN
   INSERT INTO public.profiles (id, email, full_name, avatar_url, role)
   VALUES (
     new.id,
-    new.email,
-    COALESCE(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
+    COALESCE(new.email, new.raw_user_meta_data->>'email', 'user_' || substr(new.id::text, 1, 8) || '@hackhub.dev'),
+    COALESCE(new.raw_user_meta_data->>'full_name', split_part(COALESCE(new.email, 'Participant'), '@', 1)),
     new.raw_user_meta_data->>'avatar_url',
     COALESCE((new.raw_user_meta_data->>'role')::public.user_role, 'student'::public.user_role)
   )
   ON CONFLICT (id) DO UPDATE SET
-    email = EXCLUDED.email,
+    email = COALESCE(EXCLUDED.email, public.profiles.email),
     full_name = COALESCE(EXCLUDED.full_name, public.profiles.full_name);
   RETURN NEW;
 END;
@@ -248,11 +251,13 @@ CREATE TRIGGER on_auth_user_created
 INSERT INTO public.profiles (id, email, full_name, role)
 SELECT
   id,
-  email,
-  COALESCE(raw_user_meta_data->>'full_name', split_part(email, '@', 1)),
+  COALESCE(email, raw_user_meta_data->>'email', 'user_' || substr(id::text, 1, 8) || '@hackhub.dev'),
+  COALESCE(raw_user_meta_data->>'full_name', split_part(COALESCE(email, 'Participant'), '@', 1)),
   'student'::public.user_role
 FROM auth.users
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+  email = COALESCE(EXCLUDED.email, public.profiles.email),
+  full_name = COALESCE(EXCLUDED.full_name, public.profiles.full_name);
 
 -- 5. ROW LEVEL SECURITY (RLS) POLICIES (PERMISSIVE & SAFE)
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
