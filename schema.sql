@@ -347,26 +347,38 @@ DROP POLICY IF EXISTS "Photos insert" ON public.shared_photos;
 CREATE POLICY "Photos insert" ON public.shared_photos FOR INSERT WITH CHECK (true);
 
 -- 6. STORAGE BUCKETS SETUP (For Gallery Photos & Resources)
+-- Storage Buckets & Policies (Wrapped safely to prevent 42601 aborts)
 INSERT INTO storage.buckets (id, name, public)
-VALUES ('gallery', 'gallery', true)
+VALUES ('gallery', 'gallery', true), ('resources', 'resources', true)
 ON CONFLICT (id) DO UPDATE SET public = true;
 
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('resources', 'resources', true)
-ON CONFLICT (id) DO UPDATE SET public = true;
+DO $$
+BEGIN
+  DROP POLICY IF EXISTS "Public Gallery Select" ON storage.objects;
+  CREATE POLICY "Public Gallery Select" ON storage.objects FOR SELECT USING (bucket_id = 'gallery');
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
 
--- Storage public policies
-DROP POLICY IF EXISTS "Public Gallery Select" ON storage.objects;
-CREATE POLICY "Public Gallery Select" ON storage.objects FOR SELECT USING (bucket_id = 'gallery');
+DO $$
+BEGIN
+  DROP POLICY IF EXISTS "Public Gallery Insert" ON storage.objects;
+  CREATE POLICY "Public Gallery Insert" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'gallery');
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
 
-DROP POLICY IF EXISTS "Public Gallery Insert" ON storage.objects;
-CREATE POLICY "Public Gallery Insert" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'gallery');
+DO $$
+BEGIN
+  DROP POLICY IF EXISTS "Public Resources Select" ON storage.objects;
+  CREATE POLICY "Public Resources Select" ON storage.objects FOR SELECT USING (bucket_id = 'resources');
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
 
-DROP POLICY IF EXISTS "Public Resources Select" ON storage.objects;
-CREATE POLICY "Public Resources Select" ON storage.objects FOR SELECT USING (bucket_id = 'resources');
-
-DROP POLICY IF EXISTS "Public Resources Insert" ON storage.objects;
-CREATE POLICY "Public Resources Insert" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'resources');
+DO $$
+BEGIN
+  DROP POLICY IF EXISTS "Public Resources Insert" ON storage.objects;
+  CREATE POLICY "Public Resources Insert" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'resources');
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
 
 -- 7. INITIAL SEED DATA (Default Hackathon, Profiles & Teams)
 INSERT INTO public.hackathons (
