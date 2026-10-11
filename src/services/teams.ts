@@ -14,6 +14,19 @@ export function toValidUuid(val: string | undefined | null, fallback: string): s
   return fallback;
 }
 
+function parseTeamMembers(raw: any): any[] {
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
 export const teamsService = {
   async listTeams(_hackathonId?: string): Promise<Team[]> {
     let neonTeams: Team[] = [];
@@ -71,7 +84,7 @@ export const teamsService = {
             milestones: DEFAULT_ACADEMIC_MILESTONES,
             assignedFaculty: DEFAULT_FACULTY_GUIDE,
             facultyReviews: [],
-            members: (row.team_members || []).map((m: any): TeamMember => ({
+            members: parseTeamMembers(row.team_members).map((m: any): TeamMember => ({
               id: m.id,
               teamId: m.team_id as TeamId,
               userId: m.user_id as UserId,
@@ -164,7 +177,7 @@ export const teamsService = {
             milestones: DEFAULT_ACADEMIC_MILESTONES,
             assignedFaculty: DEFAULT_FACULTY_GUIDE,
             facultyReviews: [],
-            members: (data.team_members || []).map((m: any): TeamMember => ({
+            members: parseTeamMembers(data.team_members).map((m: any): TeamMember => ({
               id: m.id,
               teamId: m.team_id as TeamId,
               userId: m.user_id as UserId,

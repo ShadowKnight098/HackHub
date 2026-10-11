@@ -5,6 +5,7 @@ import AOS from 'aos';
 import { Sidebar } from './Sidebar';
 import { MobileBottomNav } from './MobileBottomNav';
 import { QuickSearchModal } from './QuickSearchModal';
+import { ErrorBoundary } from './ErrorBoundary';
 import {
   Menu,
   Search,
@@ -240,13 +241,13 @@ export const AppLayout: React.FC = () => {
                       <Avatar
                         size="sm"
                         src={profile.avatarUrl || undefined}
-                        name={profile.fullName.slice(0, 2).toUpperCase()}
+                        name={(profile.fullName || 'Hacker').slice(0, 2).toUpperCase()}
                         className="w-8 h-8 text-[11px] font-bold bg-indigo-100 text-indigo-700 border border-indigo-200 group-hover:ring-2 group-hover:ring-indigo-500/40 group-hover:ring-offset-1 transition-all"
                       />
                     </div>
                     <div className="hidden lg:flex flex-col text-left">
                       <span className="text-xs font-semibold text-slate-900 leading-tight">
-                        {profile.fullName}
+                        {profile.fullName || 'Hacker'}
                       </span>
                       <span className="text-[10px] text-slate-500 capitalize leading-tight font-mono">
                         {profile.role}
@@ -300,7 +301,9 @@ export const AppLayout: React.FC = () => {
         {/* Page body */}
         <main ref={mainScrollRef} className="flex-1 overflow-y-auto bg-[#F8FAFC] scroll-smooth">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-24 md:pb-8">
-            <Outlet />
+            <ErrorBoundary>
+              <Outlet />
+            </ErrorBoundary>
           </div>
         </main>
 

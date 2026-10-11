@@ -28,12 +28,12 @@ const HOURS_LEFT = 26;
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { profile } = useAuth();
-  const { teams } = useTeams();
-  const { resources } = useResources();
-  const { notes } = useNotes();
+  const { teams = [] } = useTeams();
+  const { resources = [] } = useResources();
+  const { notes = [] } = useNotes();
 
   const myTeam = profile
-    ? teams.find((t) => t.members.some((m) => m.userId === profile.id))
+    ? teams.find((t) => Array.isArray(t.members) && t.members.some((m) => m?.userId === profile.id))
     : null;
 
   return (
@@ -41,11 +41,7 @@ export const Dashboard: React.FC = () => {
       {/* ═════════════════════════════════════════════════════════════════════════ */}
       {/* ── SECTION 0: QUICK ANCHOR JUMP BAR & LIVE STATUS TICKER ─────────────── */}
       {/* ═════════════════════════════════════════════════════════════════════════ */}
-      <div
-        data-aos="fade-down"
-        data-aos-duration="600"
-        className="flex flex-wrap items-center justify-between gap-3 px-1"
-      >
+      <div className="flex flex-wrap items-center justify-between gap-3 px-1">
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
           <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider mr-1 hidden sm:inline">
             Jump to:
@@ -55,7 +51,7 @@ export const Dashboard: React.FC = () => {
             className="px-3 py-1 rounded-full text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:text-indigo-600 hover:border-indigo-300 shadow-2xs transition-all flex items-center gap-1"
           >
             <Camera className="w-3 h-3 text-indigo-500" />
-            <span>Hero Stage</span>
+            <span>Event Stream</span>
           </a>
           <a
             href="#telemetry"
@@ -90,7 +86,7 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* ═════════════════════════════════════════════════════════════════════════ */}
-      {/* ── TOP HERO BANNER: DYNAMIC PHOTO SHOWCASE (TOUCH + CAROUSEL + AUTO) ─── */}
+      {/* ── TOP HERO BANNER: DYNAMIC PHOTO SHOWCASE (ZERO HARDCODED MOCKS) ────── */}
       {/* ═════════════════════════════════════════════════════════════════════════ */}
       <HeroPhotoBanner />
 
@@ -99,13 +95,7 @@ export const Dashboard: React.FC = () => {
       {/* ═════════════════════════════════════════════════════════════════════════ */}
       <section id="telemetry" className="flex flex-col gap-6">
         {/* ── HERO WELCOME & SPRINT COMMAND CARD ───────────────────────────── */}
-        <div
-          data-aos="fade-up"
-          data-aos-anchor="#hero-banner"
-          data-aos-anchor-placement="top-bottom"
-          data-aos-delay="100"
-          className="p-6 sm:p-8 bg-white border border-slate-200/90 rounded-2xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden"
-        >
+        <div className="p-6 sm:p-8 bg-white border border-slate-200/90 rounded-2xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2.5 mb-2.5">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/80">
@@ -165,9 +155,6 @@ export const Dashboard: React.FC = () => {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Teams Metric */}
           <div
-            data-aos="fade-up"
-            data-aos-anchor="#telemetry"
-            data-aos-delay="100"
             onClick={() => navigate('/teams')}
             className="p-5 bg-white border border-slate-200/90 rounded-2xl shadow-sm hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer group flex items-center gap-4"
           >
@@ -184,9 +171,6 @@ export const Dashboard: React.FC = () => {
 
           {/* Resources Metric */}
           <div
-            data-aos="fade-up"
-            data-aos-anchor="#telemetry"
-            data-aos-delay="150"
             onClick={() => navigate('/resources')}
             className="p-5 bg-white border border-slate-200/90 rounded-2xl shadow-sm hover:border-emerald-300 hover:shadow-md transition-all cursor-pointer group flex items-center gap-4"
           >
@@ -203,9 +187,6 @@ export const Dashboard: React.FC = () => {
 
           {/* Venue Tables Metric */}
           <div
-            data-aos="fade-up"
-            data-aos-anchor="#telemetry"
-            data-aos-delay="200"
             onClick={() => navigate('/map')}
             className="p-5 bg-white border border-slate-200/90 rounded-2xl shadow-sm hover:border-sky-300 hover:shadow-md transition-all cursor-pointer group flex items-center gap-4"
           >
@@ -222,9 +203,6 @@ export const Dashboard: React.FC = () => {
 
           {/* Faculty Supervision Metric */}
           <div
-            data-aos="fade-up"
-            data-aos-anchor="#telemetry"
-            data-aos-delay="250"
             onClick={() => navigate('/faculty')}
             className="p-5 bg-white border border-slate-200/90 rounded-2xl shadow-sm hover:border-amber-300 hover:shadow-md transition-all cursor-pointer group flex items-center gap-4"
           >
@@ -244,9 +222,6 @@ export const Dashboard: React.FC = () => {
         <div id="workspaces" className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {/* 1. Team Project Workspace */}
           <div
-            data-aos="fade-up"
-            data-aos-anchor="#workspaces"
-            data-aos-delay="100"
             onClick={() => (myTeam ? navigate(`/teams/${myTeam.id}`) : navigate('/teams'))}
             className="p-6 h-full bg-white rounded-2xl border border-slate-200/90 shadow-sm hover:border-slate-300 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group"
           >
@@ -278,13 +253,14 @@ export const Dashboard: React.FC = () => {
                     {myTeam.tableNumber ? `Table ${myTeam.tableNumber}` : 'Floor Area'}
                   </span>
                   <AvatarGroup isBordered size="sm" max={3} className="[&_*]:w-6 [&_*]:h-6 [&_*]:text-[9px] [&_*]:border-white">
-                    {myTeam.members.map((m) => (
-                      <Avatar
-                        key={m.id}
-                        src={m.user?.avatarUrl ?? undefined}
-                        name={m.user?.fullName?.slice(0, 1) ?? 'U'}
-                      />
-                    ))}
+                    {Array.isArray(myTeam.members) &&
+                      myTeam.members.map((m) => (
+                        <Avatar
+                          key={m.id}
+                          src={m.user?.avatarUrl ?? undefined}
+                          name={m.user?.fullName?.slice(0, 1) ?? 'U'}
+                        />
+                      ))}
                   </AvatarGroup>
                 </>
               ) : (
@@ -297,9 +273,6 @@ export const Dashboard: React.FC = () => {
 
           {/* 2. Venue Map */}
           <div
-            data-aos="fade-up"
-            data-aos-anchor="#workspaces"
-            data-aos-delay="180"
             onClick={() => navigate('/map')}
             className="p-6 h-full bg-white rounded-2xl border border-slate-200/90 shadow-sm hover:border-slate-300 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group"
           >
@@ -332,9 +305,6 @@ export const Dashboard: React.FC = () => {
 
           {/* 3. Resources & Starter APIs */}
           <div
-            data-aos="fade-up"
-            data-aos-anchor="#workspaces"
-            data-aos-delay="260"
             onClick={() => navigate('/resources')}
             className="p-6 h-full bg-white rounded-2xl border border-slate-200/90 shadow-sm hover:border-slate-300 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group"
           >
@@ -372,9 +342,6 @@ export const Dashboard: React.FC = () => {
       {/* ═════════════════════════════════════════════════════════════════════════ */}
       <section
         id="night-arena"
-        data-aos="fade-up"
-        data-aos-anchor="#workspaces"
-        data-aos-delay="150"
         className="relative rounded-3xl bg-[#0B0D14] text-slate-100 border border-slate-800/80 p-6 sm:p-8 lg:p-10 shadow-2xl overflow-hidden flex flex-col gap-8"
       >
         {/* Subtle Ambient Night Glow */}
@@ -524,14 +491,15 @@ export const Dashboard: React.FC = () => {
                       </div>
 
                       <AvatarGroup isBordered size="sm" max={3} className="[&_*]:w-6 [&_*]:h-6 [&_*]:text-[8px] [&_*]:border-slate-800 shrink-0">
-                        {team.members.map((m) => (
-                          <Avatar
-                            key={m.id}
-                            size="sm"
-                            src={m.user?.avatarUrl ?? undefined}
-                            name={m.user?.fullName?.slice(0, 1) ?? 'U'}
-                          />
-                        ))}
+                        {Array.isArray(team.members) &&
+                          team.members.map((m) => (
+                            <Avatar
+                              key={m.id}
+                              size="sm"
+                              src={m.user?.avatarUrl ?? undefined}
+                              name={m.user?.fullName?.slice(0, 1) ?? 'U'}
+                            />
+                          ))}
                       </AvatarGroup>
                     </div>
                   ))}
