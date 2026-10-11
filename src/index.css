@@ -5,9 +5,10 @@
 @layer base {
   :root {
     /* Pure Positivus Neo-Grotesque Signature Palette */
-    --bg: #F0F0F0;              /* Soft neutral gray page background (#f0f0f0) */
-    --surface: #F3F3F3;         /* Neutral light-gray container & secondary card */
+    --bg: #FFFFFF;              /* Clean pure white page background (#ffffff) */
+    --surface: #FFFFFF;         /* Clean white container & surface */
     --surface-white: #FFFFFF;   /* Clean white card surface */
+    --surface-gray: #F3F3F3;    /* Light-gray secondary card */
     --surface-dark: #191A23;    /* Deep obsidian/black card */
     --ink: #191A23;             /* Primary text: deep pitch graphite */
     --muted: #6B7280;           /* Muted secondary body text */
@@ -29,9 +30,10 @@
   /* Universal single theme: residual data-theme uses identical Positivus system */
   :root[data-theme="dark"],
   :root[data-theme="light"] {
-    --bg: #F0F0F0;
-    --surface: #F3F3F3;
+    --bg: #FFFFFF;
+    --surface: #FFFFFF;
     --surface-white: #FFFFFF;
+    --surface-gray: #F3F3F3;
     --surface-dark: #191A23;
     --ink: #191A23;
     --muted: #6B7280;
@@ -57,12 +59,12 @@
   }
 
   html {
-    background-color: #F0F0F0;
+    background-color: #FFFFFF;
     color: #191A23;
   }
 
   body {
-    background-color: #F0F0F0;
+    background-color: #FFFFFF;
     color: #191A23;
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     font-size: 15px;
@@ -109,8 +111,8 @@
 @layer utilities {
   /* Subtle clean background grid */
   .bg-ivory-grid, .bg-positivus-grid {
-    background-color: #F0F0F0;
-    background-image: radial-gradient(#191A23 0.75px, transparent 0.75px);
+    background-color: #FFFFFF;
+    background-image: radial-gradient(#191A23 0.65px, transparent 0.65px);
     background-size: 24px 24px;
     background-position: 0 0;
     background-repeat: repeat;

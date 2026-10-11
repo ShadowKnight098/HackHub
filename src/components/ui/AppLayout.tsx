@@ -23,22 +23,22 @@ export const AppLayout: React.FC = () => {
       />
 
       {/* Main content pane */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative bg-white">
         {/* Top header */}
-        <header className="h-14 shrink-0 flex items-center justify-between px-4 sm:px-8 border-b border-[var(--line)] bg-[var(--surface)]">
+        <header className="h-14 shrink-0 flex items-center justify-between px-4 sm:px-8 border-b border-[#191A23] bg-white">
           {/* Left Brand */}
           <div className="flex items-center gap-2.5">
             <div className="commons-logo-mark md:hidden">
               <span className="font-heading font-bold text-xs">H</span>
             </div>
-            <span className="font-heading font-bold text-base text-[var(--ink)] tracking-tight md:hidden">
+            <span className="font-heading font-bold text-base text-[#191A23] tracking-tight md:hidden">
               HackHub
             </span>
             <div className="hidden md:flex items-center gap-2">
-              <span className="font-heading font-bold text-sm text-[var(--ink)]">
+              <span className="font-heading font-bold text-sm text-[#191A23]">
                 HackHub
               </span>
-              <span className="text-xs px-2 py-0.5 rounded-md bg-[#B9FF66] text-[#191A23] font-bold">
+              <span className="text-xs px-2 py-0.5 rounded-md bg-[#B9FF66] text-[#191A23] font-bold border border-[#191A23]">
                 Platform
               </span>
             </div>
@@ -59,7 +59,7 @@ export const AppLayout: React.FC = () => {
         </header>
 
         {/* Page body */}
-        <main className="flex-1 overflow-y-auto transition-colors duration-700 ease-in-out">
+        <main className="flex-1 overflow-y-auto bg-white">
           <div className="max-w-6xl mx-auto px-4 sm:px-8 pt-6 pb-28 md:pb-6">
             <Outlet />
           </div>
