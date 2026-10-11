@@ -160,6 +160,84 @@ export const SharedPhotoGallery: React.FC = () => {
     return tag.includes(selectedTag.toUpperCase());
   });
 
+  // Mobile horizontal auto-carousel & touch scroll state
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [activeMobileIndex, setActiveMobileIndex] = useState(0);
+  const isPausedRef = useRef(false);
+  const pauseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Scroll to specific index smoothly
+  const scrollToIndex = useCallback((index: number) => {
+    if (!scrollContainerRef.current) return;
+    const container = scrollContainerRef.current;
+    const children = Array.from(container.children) as HTMLElement[];
+    const targetCard = children[index];
+    if (targetCard) {
+      const scrollPos = targetCard.offsetLeft - container.offsetLeft;
+      container.scrollTo({
+        left: scrollPos,
+        behavior: 'smooth',
+      });
+      setActiveMobileIndex(index);
+    }
+  }, []);
+
+  // Update active slide on scroll
+  const handleScroll = useCallback(() => {
+    if (!scrollContainerRef.current) return;
+    const container = scrollContainerRef.current;
+    const scrollLeft = container.scrollLeft;
+    const children = Array.from(container.children) as HTMLElement[];
+    if (children.length === 0) return;
+
+    const firstCard = children[0];
+    if (!firstCard) return;
+    const cardWidth = firstCard.offsetWidth + 20; // width + gap
+    const index = Math.round(scrollLeft / cardWidth);
+    if (index >= 0 && index < filteredPhotos.length) {
+      setActiveMobileIndex(index);
+    }
+  }, [filteredPhotos.length]);
+
+  // Pause carousel temporarily on touch or hover
+  const pauseCarousel = useCallback(() => {
+    isPausedRef.current = true;
+    if (pauseTimeoutRef.current) {
+      clearTimeout(pauseTimeoutRef.current);
+    }
+  }, []);
+
+  const resumeCarousel = useCallback(() => {
+    if (pauseTimeoutRef.current) {
+      clearTimeout(pauseTimeoutRef.current);
+    }
+    // Resume auto-carousel after 3s of user inactivity
+    pauseTimeoutRef.current = setTimeout(() => {
+      isPausedRef.current = false;
+    }, 3000);
+  }, []);
+
+  // Smooth Auto-Carousel Timer (advances every 3.8 seconds on mobile)
+  useEffect(() => {
+    if (filteredPhotos.length <= 1) return;
+
+    const interval = setInterval(() => {
+      // Only auto-scroll when not paused and when on mobile/tablet view
+      if (isPausedRef.current || window.innerWidth >= 768) return;
+
+      setActiveMobileIndex((prev) => {
+        const next = (prev + 1) % filteredPhotos.length;
+        scrollToIndex(next);
+        return next;
+      });
+    }, 3800);
+
+    return () => {
+      clearInterval(interval);
+      if (pauseTimeoutRef.current) clearTimeout(pauseTimeoutRef.current);
+    };
+  }, [filteredPhotos.length, scrollToIndex]);
+
   // Stop camera helper
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
@@ -411,13 +489,21 @@ export const SharedPhotoGallery: React.FC = () => {
         ))}
       </div>
 
-      {/* ── IMAGE GALLERY GRID (MATCHING USER REFERENCE LAYOUT) ──── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7">
+      {/* ── IMAGE GALLERY (MOBILE HORIZONTAL TOUCH SCROLL & AUTO CAROUSEL / DESKTOP GRID) ──── */}
+      <div
+        ref={scrollContainerRef}
+        onScroll={handleScroll}
+        onTouchStart={pauseCarousel}
+        onTouchEnd={resumeCarousel}
+        onMouseEnter={pauseCarousel}
+        onMouseLeave={resumeCarousel}
+        className="flex md:grid md:grid-cols-2 lg:grid-cols-3 overflow-x-auto md:overflow-visible snap-x snap-mandatory md:snap-none gap-5 sm:gap-6 md:gap-7 pb-4 md:pb-0 scrollbar-none scroll-smooth touch-pan-x"
+      >
         {filteredPhotos.map((photo) => (
           <div
             key={photo.id}
             onClick={() => setSelectedPhoto(photo)}
-            className="flex flex-col group cursor-pointer"
+            className="min-w-[85vw] sm:min-w-[340px] md:min-w-0 snap-center shrink-0 md:shrink flex flex-col group cursor-pointer"
           >
             {/* Cover image container */}
             <div className="relative aspect-[16/10] w-full rounded-[22px] overflow-hidden bg-[#F3F3F3] border-[1.5px] border-[#191A23] shadow-[0_4px_0_#191A23] group-hover:shadow-[0_6px_0_#191A23] group-hover:-translate-y-0.5 transition-all">
@@ -474,6 +560,33 @@ export const SharedPhotoGallery: React.FC = () => {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* ── MOBILE PAGINATION DOTS & AUTO-CAROUSEL CONTROLS ── */}
+      <div className="flex md:hidden items-center justify-between pt-2 px-1 border-t border-[#191A23]/10">
+        <div className="flex items-center gap-1.5">
+          {filteredPhotos.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => scrollToIndex(i)}
+              className={`h-2 transition-all rounded-full cursor-pointer ${
+                i === activeMobileIndex
+                  ? 'w-6 bg-[#191A23]'
+                  : 'w-2 bg-[#D1D5DB] hover:bg-[#9CA3AF]'
+              }`}
+              aria-label={`Go to slide ${i + 1}`}
+            />
+          ))}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-mono font-bold text-[#6B7280]">
+            {activeMobileIndex + 1} / {filteredPhotos.length}
+          </span>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#B9FF66] text-[#191A23] font-bold">
+            Auto & Swipe
+          </span>
+        </div>
       </div>
 
       {/* ── LIGHTBOX ZOOM MODAL ─────────────────────────────────── */}
