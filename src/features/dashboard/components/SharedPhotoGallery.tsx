@@ -21,90 +21,9 @@ import { db, SharedPhoto } from '@/lib/db';
 import { useAuth } from '@/features/auth';
 import { useTeams } from '@/features/teams';
 import { storageService } from '@/services/storage';
+import { supabase } from '@/lib/supabase';
 
-// ── DEFAULT GALLERY SEED SNAPSHOTS (EXACT MATCH TO USER REFERENCE) ──
-const DEFAULT_GALLERY_PHOTOS: SharedPhoto[] = [
-  {
-    id: 'gallery-1',
-    url: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=900',
-    title: 'Chatbots And Virtual Assistants',
-    caption: 'Keynote exploration into autonomous agent swarms, prompt engineering & LLM integration.',
-    teamName: 'AI Core Lab',
-    tableNumber: '4628 ROSE TOP CIR, ANCHORAGE',
-    uploadedBy: { name: 'Elena Vance' },
-    tags: ['INNOVATION'],
-    likes: 24,
-    likedByMe: false,
-    createdAt: '2026-10-10',
-  },
-  {
-    id: 'gallery-2',
-    url: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=900',
-    title: 'Modern Marketing Summit Sydney',
-    caption: 'Product-market fit breakdown, founder distribution loops, and user acquisition models.',
-    teamName: 'Growth Hacking Crew',
-    tableNumber: '4821 RIDE TOP, LEA MAN CITY',
-    uploadedBy: { name: 'Marcus Chen' },
-    tags: ['TECH SUMMIT'],
-    likes: 18,
-    likedByMe: true,
-    createdAt: '2026-11-06',
-  },
-  {
-    id: 'gallery-3',
-    url: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=900',
-    title: 'Registration For Opening Workshop',
-    caption: 'Full-house introductory kick-off, rules overview, and collaborative team pairings.',
-    teamName: 'Cohort Orientation',
-    tableNumber: '312 PARK AVE, NEW YORK',
-    uploadedBy: { name: 'Sofia Rodriguez' },
-    tags: ['WORKSHOP'],
-    likes: 31,
-    likedByMe: false,
-    createdAt: '2026-11-21',
-  },
-  {
-    id: 'gallery-4',
-    url: 'https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=900',
-    title: 'How Immersive is Revitalising The Cultural...',
-    caption: 'Interactive spatial computing, AR/VR human-computer interfaces, and live telemetry.',
-    teamName: 'Immersive Media',
-    tableNumber: '4628 ROSE TOP CIR, ANCHORAGE',
-    uploadedBy: { name: 'David Park' },
-    tags: ['RESEARCH'],
-    likes: 15,
-    likedByMe: false,
-    createdAt: '2026-11-20',
-  },
-  {
-    id: 'gallery-5',
-    url: 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=900',
-    title: 'Machine Learning Night Fastaily Part 2',
-    caption: 'High-throughput inference on edge GPUs, quantisation pipelines, and real-time vision.',
-    teamName: 'Neural Net Guild',
-    tableNumber: '2038 6TH AVE, KETCHIKAN',
-    uploadedBy: { name: 'Amara Okafor' },
-    tags: ['KEYNOTE'],
-    likes: 42,
-    likedByMe: true,
-    createdAt: '2026-11-14',
-  },
-  {
-    id: 'gallery-6',
-    url: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=900',
-    title: 'Our excellent partner France Pavilion',
-    caption: 'Global delegations, international exchange, and hardware demo exhibitions.',
-    teamName: 'Global Hackers',
-    tableNumber: '936 MICHAEL ST, ALL ANCHORAGE',
-    uploadedBy: { name: 'Julien Laurent' },
-    tags: ['CONFERENCE'],
-    likes: 29,
-    likedByMe: false,
-    createdAt: '2026-11-11',
-  },
-];
-
-const FILTER_TAGS = ['All', 'Innovation', 'Tech Summit', 'Workshop', 'Research', 'Keynote', 'Conference'];
+const FILTER_TAGS = ['All', 'Live Demo', 'Prototype', 'Workshop', 'Keynote', 'Team'];
 
 export const SharedPhotoGallery: React.FC = () => {
   const { profile } = useAuth();
@@ -141,7 +60,53 @@ export const SharedPhotoGallery: React.FC = () => {
     ? `Table ${myTeam.tableNumber}`
     : cachedLoc?.name || 'Main Venue Floor';
 
-  const loadPhotos = useCallback(() => {
+  const loadPhotos = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('shared_photos')
+        .select(`
+          id,
+          url,
+          title,
+          caption,
+          table_number,
+          likes_count,
+          created_at,
+          uploader:uploader_id (
+            full_name,
+            avatar_url
+          ),
+          team:team_id (
+            name
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (!error && data && data.length > 0) {
+        const mapped: SharedPhoto[] = data.map((item: any) => ({
+          id: item.id,
+          url: item.url,
+          title: item.title || 'Team Snapshot',
+          caption: item.caption || '',
+          teamName: item.team?.name || 'HackHub Team',
+          tableNumber: item.table_number || 'Main Venue Floor',
+          uploadedBy: {
+            name: item.uploader?.full_name || 'Participant',
+            avatarUrl: item.uploader?.avatar_url || undefined,
+          },
+          tags: ['LIVE DEMO'],
+          likes: item.likes_count || 0,
+          likedByMe: false,
+          createdAt: item.created_at ? item.created_at.slice(0, 10) : new Date().toISOString().slice(0, 10),
+        }));
+        setDynamicPhotos(mapped);
+        return;
+      }
+    } catch (err) {
+      console.warn('Failed to fetch shared photos from Supabase:', err);
+    }
+
+    // Fallback to local db if Supabase is offline or empty
     const stored = db.photos.getAll();
     setDynamicPhotos(stored);
   }, []);
@@ -150,8 +115,8 @@ export const SharedPhotoGallery: React.FC = () => {
     loadPhotos();
   }, [loadPhotos]);
 
-  // Combined photo list (dynamic photos first, then reference seed photos)
-  const allPhotos = [...dynamicPhotos, ...DEFAULT_GALLERY_PHOTOS];
+  // Photo list is 100% dynamic (zero hardcoded images)
+  const allPhotos = dynamicPhotos;
 
   // Filtered photos
   const filteredPhotos = allPhotos.filter((photo) => {
@@ -359,7 +324,7 @@ export const SharedPhotoGallery: React.FC = () => {
     };
   }, [stopCamera]);
 
-  const handleToggleLike = (id: string, e: React.MouseEvent) => {
+  const handleToggleLike = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const updated = db.photos.toggleLike(id);
     if (updated) {
@@ -371,18 +336,17 @@ export const SharedPhotoGallery: React.FC = () => {
       if (selectedPhoto && selectedPhoto.id === id) {
         setSelectedPhoto({ ...selectedPhoto, likes: updated.likes, likedByMe: updated.likedByMe });
       }
-    } else {
-      // Toggle seed photo like locally
-      if (selectedPhoto && selectedPhoto.id === id) {
-        setSelectedPhoto((prev) =>
-          prev
-            ? {
-                ...prev,
-                likedByMe: !prev.likedByMe,
-                likes: prev.likedByMe ? prev.likes - 1 : prev.likes + 1,
-              }
-            : null
-        );
+
+      // Sync like to Supabase if it is a persisted UUID row
+      try {
+        if (!id.startsWith('photo-')) {
+          await supabase
+            .from('shared_photos')
+            .update({ likes_count: updated.likes })
+            .eq('id', id);
+        }
+      } catch (err) {
+        console.warn('Failed to update likes in Supabase:', err);
       }
     }
   };
@@ -410,8 +374,8 @@ export const SharedPhotoGallery: React.FC = () => {
       const created: SharedPhoto = {
         id: `photo-${Date.now()}`,
         url: publicBucketUrl,
-        title: newTitle.trim() || `${autoTeam} Prototype`,
-        caption: `Captured live at ${autoLocation}`,
+        title: newTitle.trim() || `${autoTeam} Snapshot`,
+        caption: `Captured at ${autoLocation}`,
         teamName: autoTeam,
         tableNumber: autoLocation,
         uploadedBy: {
@@ -424,8 +388,25 @@ export const SharedPhotoGallery: React.FC = () => {
         createdAt: new Date().toISOString().slice(0, 10),
       };
 
+      // 1. Instant local reactivity
       db.photos.insert(created);
       setDynamicPhotos((prev) => [created, ...prev]);
+
+      // 2. Persist to Supabase shared_photos table
+      try {
+        await supabase.from('shared_photos').insert({
+          url: publicBucketUrl,
+          title: created.title,
+          caption: created.caption,
+          table_number: autoLocation,
+          uploader_id: profile?.id,
+          team_id: myTeam?.id,
+          likes_count: 1,
+        });
+      } catch (dbErr) {
+        console.warn('Failed to insert into Supabase shared_photos:', dbErr);
+      }
+
       closeModal();
     } catch (uploadErr) {
       console.warn('Failed to upload photo:', uploadErr);
@@ -490,104 +471,138 @@ export const SharedPhotoGallery: React.FC = () => {
       </div>
 
       {/* ── IMAGE GALLERY (MOBILE HORIZONTAL TOUCH SCROLL & AUTO CAROUSEL / DESKTOP GRID) ──── */}
-      <div
-        ref={scrollContainerRef}
-        onScroll={handleScroll}
-        onTouchStart={pauseCarousel}
-        onTouchEnd={resumeCarousel}
-        onMouseEnter={pauseCarousel}
-        onMouseLeave={resumeCarousel}
-        className="flex md:grid md:grid-cols-2 lg:grid-cols-3 overflow-x-auto md:overflow-visible snap-x snap-mandatory md:snap-none gap-5 sm:gap-6 md:gap-7 pb-4 md:pb-0 scrollbar-none scroll-smooth touch-pan-x"
-      >
-        {filteredPhotos.map((photo) => (
+      {filteredPhotos.length === 0 ? (
+        <div className="rounded-[22px] border-[1.5px] border-[#191A23] border-dashed bg-[#F9F9FB] p-8 sm:p-12 text-center flex flex-col items-center justify-center gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-[#B9FF66] border-[1.5px] border-[#191A23] flex items-center justify-center shadow-[0_3px_0_#191A23]">
+            <Camera className="w-7 h-7 text-[#191A23]" />
+          </div>
+          <div className="max-w-md">
+            <h4 className="font-heading text-base sm:text-lg font-bold text-[#191A23]">
+              No shared photos yet
+            </h4>
+            <p className="text-xs sm:text-sm text-[#6B7280] mt-1 leading-relaxed">
+              Be the first to share a moment! Snap photos of your team working, prototype demos, or venue highlights.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 mt-1">
+            <button
+              onClick={() => openModal('camera')}
+              className="commons-btn-primary py-2 px-4 text-xs flex items-center gap-2 cursor-pointer shadow-[0_2px_0_#191A23]"
+            >
+              <Camera className="w-4 h-4" />
+              <span>Snap Photo</span>
+            </button>
+            <button
+              onClick={() => openModal('upload')}
+              className="commons-btn-secondary py-2 px-4 text-xs flex items-center gap-2 cursor-pointer shadow-[0_2px_0_#191A23]"
+            >
+              <Upload className="w-4 h-4" />
+              <span>Upload Image</span>
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
           <div
-            key={photo.id}
-            onClick={() => setSelectedPhoto(photo)}
-            className="min-w-[85vw] sm:min-w-[340px] md:min-w-0 snap-center shrink-0 md:shrink flex flex-col group cursor-pointer"
+            ref={scrollContainerRef}
+            onScroll={handleScroll}
+            onTouchStart={pauseCarousel}
+            onTouchEnd={resumeCarousel}
+            onMouseEnter={pauseCarousel}
+            onMouseLeave={resumeCarousel}
+            className="flex md:grid md:grid-cols-2 lg:grid-cols-3 overflow-x-auto md:overflow-visible snap-x snap-mandatory md:snap-none gap-5 sm:gap-6 md:gap-7 pb-4 md:pb-0 scrollbar-none scroll-smooth touch-pan-x"
           >
-            {/* Cover image container */}
-            <div className="relative aspect-[16/10] w-full rounded-[22px] overflow-hidden bg-[#F3F3F3] border-[1.5px] border-[#191A23] shadow-[0_4px_0_#191A23] group-hover:shadow-[0_6px_0_#191A23] group-hover:-translate-y-0.5 transition-all">
-              <img
-                src={photo.url}
-                alt={photo.title}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src =
-                    'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800';
-                }}
-              />
+            {filteredPhotos.map((photo) => (
+              <div
+                key={photo.id}
+                onClick={() => setSelectedPhoto(photo)}
+                className="min-w-[85vw] sm:min-w-[340px] md:min-w-0 snap-center shrink-0 md:shrink flex flex-col group cursor-pointer"
+              >
+                {/* Cover image container */}
+                <div className="relative aspect-[16/10] w-full rounded-[22px] overflow-hidden bg-[#F3F3F3] border-[1.5px] border-[#191A23] shadow-[0_4px_0_#191A23] group-hover:shadow-[0_6px_0_#191A23] group-hover:-translate-y-0.5 transition-all">
+                  <img
+                    src={photo.url}
+                    alt={photo.title}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src =
+                        'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="250" viewBox="0 0 400 250" fill="%23f3f4f6"><rect width="400" height="250"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%239ca3af" font-family="sans-serif" font-size="14">Image unavailable</text></svg>';
+                    }}
+                  />
 
-              {/* Top hover quick actions */}
-              <div className="absolute top-3 right-3 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                  onClick={(e) => handleToggleLike(photo.id, e)}
-                  className="w-8 h-8 rounded-full bg-white/95 backdrop-blur-md border border-[#191A23] text-[#191A23] flex items-center justify-center hover:bg-[#B9FF66] transition-colors shadow-sm cursor-pointer"
-                  title="Like photo"
-                >
-                  <Heart className={`w-3.5 h-3.5 ${photo.likedByMe ? 'fill-[#E11D48] text-[#E11D48]' : ''}`} />
-                </button>
-                <div
-                  className="w-8 h-8 rounded-full bg-white/95 backdrop-blur-md border border-[#191A23] text-[#191A23] flex items-center justify-center hover:bg-[#B9FF66] transition-colors shadow-sm"
-                  title="View fullscreen"
-                >
-                  <Maximize2 className="w-3.5 h-3.5" />
+                  {/* Top hover quick actions */}
+                  <div className="absolute top-3 right-3 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={(e) => handleToggleLike(photo.id, e)}
+                      className="w-8 h-8 rounded-full bg-white/95 backdrop-blur-md border border-[#191A23] text-[#191A23] flex items-center justify-center hover:bg-[#B9FF66] transition-colors shadow-sm cursor-pointer"
+                      title="Like photo"
+                    >
+                      <Heart className={`w-3.5 h-3.5 ${photo.likedByMe ? 'fill-[#E11D48] text-[#E11D48]' : ''}`} />
+                    </button>
+                    <div
+                      className="w-8 h-8 rounded-full bg-white/95 backdrop-blur-md border border-[#191A23] text-[#191A23] flex items-center justify-center hover:bg-[#B9FF66] transition-colors shadow-sm"
+                      title="View fullscreen"
+                    >
+                      <Maximize2 className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Text Details below image */}
+                <div className="flex flex-col mt-3.5">
+                  {/* Pill & Date row */}
+                  <div className="flex items-center gap-2.5">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-[#4F46E5] text-white">
+                      {photo.tags?.[0] || 'SNAPSHOT'}
+                    </span>
+                    <span className="text-xs font-mono text-[#9CA3AF]">
+                      {photo.createdAt?.slice(0, 10) || 'Today'}
+                    </span>
+                  </div>
+
+                  {/* Title */}
+                  <h3 className="font-heading font-bold text-base sm:text-lg text-[#191A23] leading-snug line-clamp-2 mt-2 group-hover:underline">
+                    {photo.title}
+                  </h3>
+
+                  {/* Location */}
+                  <div className="flex items-center gap-1.5 text-xs text-[#E11D48] font-mono font-semibold uppercase tracking-wider mt-1.5">
+                    <MapPin className="w-3.5 h-3.5 shrink-0 text-[#E11D48]" />
+                    <span className="truncate">{photo.tableNumber || 'Venue Floor'}</span>
+                  </div>
                 </div>
               </div>
+            ))}
+          </div>
+
+          {/* ── MOBILE PAGINATION DOTS & AUTO-CAROUSEL CONTROLS ── */}
+          <div className="flex md:hidden items-center justify-between pt-2 px-1 border-t border-[#191A23]/10">
+            <div className="flex items-center gap-1.5">
+              {filteredPhotos.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => scrollToIndex(i)}
+                  className={`h-2 transition-all rounded-full cursor-pointer ${
+                    i === activeMobileIndex
+                      ? 'w-6 bg-[#191A23]'
+                      : 'w-2 bg-[#D1D5DB] hover:bg-[#9CA3AF]'
+                  }`}
+                  aria-label={`Go to slide ${i + 1}`}
+                />
+              ))}
             </div>
 
-            {/* Text Details below image */}
-            <div className="flex flex-col mt-3.5">
-              {/* Pill & Date row */}
-              <div className="flex items-center gap-2.5">
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-[#4F46E5] text-white">
-                  {photo.tags?.[0] || 'KEYNOTE'}
-                </span>
-                <span className="text-xs font-mono text-[#9CA3AF]">
-                  {photo.createdAt?.slice(0, 10) || '2026-10-11'}
-                </span>
-              </div>
-
-              {/* Title */}
-              <h3 className="font-heading font-bold text-base sm:text-lg text-[#191A23] leading-snug line-clamp-2 mt-2 group-hover:underline">
-                {photo.title}
-              </h3>
-
-              {/* Location */}
-              <div className="flex items-center gap-1.5 text-xs text-[#E11D48] font-mono font-semibold uppercase tracking-wider mt-1.5">
-                <MapPin className="w-3.5 h-3.5 shrink-0 text-[#E11D48]" />
-                <span className="truncate">{photo.tableNumber || '4628 ROSE TOP CIR, ANCHORAGE'}</span>
-              </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-mono font-bold text-[#6B7280]">
+                {activeMobileIndex + 1} / {filteredPhotos.length}
+              </span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#B9FF66] text-[#191A23] font-bold">
+                Auto & Swipe
+              </span>
             </div>
           </div>
-        ))}
-      </div>
-
-      {/* ── MOBILE PAGINATION DOTS & AUTO-CAROUSEL CONTROLS ── */}
-      <div className="flex md:hidden items-center justify-between pt-2 px-1 border-t border-[#191A23]/10">
-        <div className="flex items-center gap-1.5">
-          {filteredPhotos.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => scrollToIndex(i)}
-              className={`h-2 transition-all rounded-full cursor-pointer ${
-                i === activeMobileIndex
-                  ? 'w-6 bg-[#191A23]'
-                  : 'w-2 bg-[#D1D5DB] hover:bg-[#9CA3AF]'
-              }`}
-              aria-label={`Go to slide ${i + 1}`}
-            />
-          ))}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] font-mono font-bold text-[#6B7280]">
-            {activeMobileIndex + 1} / {filteredPhotos.length}
-          </span>
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#B9FF66] text-[#191A23] font-bold">
-            Auto & Swipe
-          </span>
-        </div>
-      </div>
+        </>
+      )}
 
       {/* ── LIGHTBOX ZOOM MODAL ─────────────────────────────────── */}
       <AnimatePresence>
